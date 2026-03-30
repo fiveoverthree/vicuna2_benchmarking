@@ -1,0 +1,29 @@
+[submodule "rtl/vicuna2_core"]
+	path = rtl/vicuna2_core
+	url = https://github.com/vproc/vicuna2_core.git
+[submodule "rtl/cv32e40x"]
+	path = rtl/cv32e40x
+	url = https://github.com/ParkerJones567/cv32e40x_f_zhf.git
+	branch = f_zhf_fixes
+[submodule "rtl/cv32a60x"]
+	path = rtl/cv32a60x
+	url = https://github.com/ParkerJones567/cva6.git
+	branch = cv32a60x
+[submodule "rtl/fpu_ss"]
+	path = rtl/fpu_ss
+	url = https://github.com/ParkerJones567/fpu_ss.git
+[submodule "toolchain/riscv-gnu-toolchain"]
+	path = toolchain/riscv-gnu-toolchain
+	url = https://github.com/riscv-collab/riscv-gnu-toolchain.git
+[submodule "processor_models/gem5/gem5"]
+	path = processor_models/gem5/gem5
+	url = https://github.com/gem5/gem5.git
+[submodule "toolchain/verilator"]
+	path = toolchain/verilator
+	url = https://github.com/verilator/verilator.git
+[submodule "benchmark_sources/MLPerfTiny/tflm/tflite-micro"]
+	path = benchmark_sources/MLPerfTiny/tflm/tflite-micro
+	url = https://github.com/tensorflow/tflite-micro.git
+[submodule "benchmark_sources/framework/vicuna2_bsp"]
+	path = benchmark_sources/framework/vicuna2_bsp
+	url = https://github.com/vproc/vicuna2_bsp.git
