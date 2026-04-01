@@ -1,1 +1,11 @@
+#Build System and Toolchain Ignores
+#Ignore Build Dirs
 processor_models/verilator/build/*
+build_programs/build/*
+#Ignore built GCCs
+toolchain/GCC/*
+
+
+#Benchmark Specific Ignores
+#MLPerfTiny
+benchmark_sources/MLPerfTiny/tflm/tflm_source_tree/

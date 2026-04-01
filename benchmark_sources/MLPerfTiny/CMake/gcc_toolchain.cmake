@@ -1,0 +1,44 @@
+set(RISCV_CMODEL "medany" CACHE STRING "mcmodel argument to the compiler")
+set(CMAKE_SYSTEM_PROCESSOR ${RISCV_ARCH})
+set(CMAKE_SYSTEM_NAME Generic)
+
+set(RISCV_GCC_PREFIX "${TOOLCHAIN_TOP}/GCC/multilib")
+set(RISCV_GCC_BASENAME "riscv32-unknown-elf")
+
+#set(RISCV_LLVM_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../toolchain/llvm/bin" CACHE PATH "Install location of LLVM RISC-V toolchain.") ##shouldnt be needed
+
+set(TC_PREFIX "${RISCV_GCC_PREFIX}/bin/${RISCV_GCC_BASENAME}-")
+
+set(CMAKE_C_COMPILER ${TC_PREFIX}gcc)
+set(CMAKE_CXX_COMPILER ${TC_PREFIX}g++)
+set(CMAKE_ASM_COMPILER ${TC_PREFIX}gcc)
+set(CMAKE_LINKER ${TC_PREFIX}ld)
+set(CMAKE_OBJCOPY ${TC_PREFIX}objcopy)
+set(CMAKE_OBJDUMP ${TC_PREFIX}objdump)
+set(CMAKE_AR ${TC_PREFIX}ar)
+set(CMAKE_RANLIB ${TC_PREFIX}ranlib)
+set(CMAKE_STRIP ${TC_PREFIX}strip)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}  -ftree-vectorize -fno-tree-slp-vectorize ") #break these flags out?  to higher level
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL} -ftree-vectorize -fno-tree-slp-vectorize ")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL} -ftree-vectorize -fno-tree-slp-vectorize ")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL} -ftree-vectorize -fno-tree-slp-vectorize ")
+
+####
+# Set some compiler options for easier debug or faster builds
+####
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+# Using C and C++ 11
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O2 -g -ggdb ${AUTOVEC_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2 -g -ggdb ${AUTOVEC_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2 ${AUTOVEC_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 ${AUTOVEC_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -Wno-format -std=c11 ${AUTOVEC_FLAGS}") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 ${AUTOVEC_FLAGS}")
+
+
+
