@@ -32,8 +32,6 @@ option(TRACE_FULL "Enable FULL VCD trace outputs" OFF) #TODO: prevent this optio
 # Check if verilator has been built and include tool.   If not, build it
 ####################
 
-##TODO: CHECK AND BUILD VERILATOR MODEL
-
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/bin/verilator_bin")
     message("Verilator binary not found in '/toolchain/verilator', building from Verilator submodule")
     execute_process(COMMAND autoconf
@@ -142,8 +140,6 @@ endif()
 
 add_subdirectory(../../rtl/ rtl)
 
-
-message(STATUS "${VICUNA_INCS}")
 
 ######################
 # Flags
