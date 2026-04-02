@@ -1,10 +1,12 @@
 #Build System and Toolchain Ignores
+
 #Ignore Build Dirs
 processor_models/verilator/build/*
 build_programs/build/*
 #Ignore built GCCs
 toolchain/GCC/*
 
+#Simulator Specific Ignores
 
 #Benchmark Specific Ignores
 #MLPerfTiny

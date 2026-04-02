@@ -1,0 +1,88 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2022 Guillem Lopez Paradis
+# Copyright (c) 2026 Jefferson Parker Jones
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met: redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer;
+# redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution;
+# neither the name of the copyright holders nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Authors: Guillem Lopez Paradis
+# Modifications: Jefferson Parker Jones
+Import('*')
+Import('env')
+import os
+import glob
+
+# rtlObject
+SimObject('rtlObject.py', sim_objects=["rtlObject"])
+Source('rtlObject.cc')
+
+# rtlFIFO
+SimObject('rtlCore.py', sim_objects=["rtlCore"])
+Source('rtlCore.cc')
+Source('wrapper_core.cc')
+
+## Relevant Paths
+#model_path = os.path.abspath("/home/parker/Desktop/vicuna_unit_testing_CVA6/working/vicuna2_unit_testing/build_model/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
+verilator_path = os.path.abspath(os.environ["VERILATOR_MODEL_SRCS"])
+verilator_path = os.path.abspath(os.environ["VERILATOR_ROOT"])
+
+## Include Verilator Sources
+Source(verilator_path+"/verilated.cpp")
+Source(verilator_path+"/verilated_vcd_c.cpp")
+Source(verilator_path+"/verilated_threads.cpp")
+##Other souces might be needed?
+
+## Include Model Sources
+print("################")
+print("Model Path:")
+print(model_path)
+print(glob.glob(os.path.abspath(model_path+"/*.cpp")))
+for file in glob.glob(os.path.abspath(model_path+"/*.cpp")):
+    Source(file)
+    print(file)
+
+## Include Fifo Wrapper sources moved to same folder as others and included above explicitly
+# print("################")
+# print("FIFO Wrapper Path:")
+# for file in glob.glob(fifo_path+"/*.cc"):
+#     Source(file)
+#     print(file)
+
+
+## Add Include Paths
+print("################")
+verilator_path_gtk = verilator_path + "/gtkwave/"
+verilator_path_vlt = verilator_path + "/vltstd/"
+
+#inc_path = verilator_path_gtk+":"+verilator_path_vlt+":"+verilator_path+":"+model_path+":"+fifo_path
+#env.AppendENVPath('INCLUDE', inc_path)
+
+env.Append(CPPPATH=[verilator_path_gtk, verilator_path_vlt, verilator_path, model_path, fifo_path])
+env.Append(CPPDEFINES=["VM_SC=0", "VM_TRACE=1", "VL_THREADED=0"])
+
+# Flags
+DebugFlag('rtlObject')
+DebugFlag('rtlObjectDebug')
+DebugFlag('rtlCore')
+

@@ -26,8 +26,10 @@ option(PRINT        "Enable print statements"                                   
 # Default Paths to Subdirectories
 #####
 
-set(TOOLCHAIN_TOP ${CMAKE_CURRENT_SOURCE_DIR}/../toolchain)
-set(VERILATOR_MODEL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../processor_models/verilator)
+set(TOOLCHAIN_TOP ${CMAKE_CURRENT_SOURCE_DIR}/../toolchain) #Top level path to toolchain folder
+set(VERILATOR_MODEL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../processor_models/verilator) #Top level path to verilator model files
+set(GEM5_MODEL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../processor_models/gem5)#Top level path to gem5 model files
+set(BUILD_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/build) #Top level path to program build folder
 
 #####
 # Select RISCV_ARCH and RISCV_ABI and Autovectorization flags based on selected features

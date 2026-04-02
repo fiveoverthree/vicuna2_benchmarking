@@ -21,17 +21,14 @@ static volatile long *const uart_data   = (volatile long *const) 0x00000400;
 
 int run_test()
 {
-    *uart_data = 1;
     //tflite::MicroErrorReporter micro_error_reporter;
     //tflite::ErrorReporter *error_reporter = &micro_error_reporter;
-    //asm volatile ("jr x0");
     const tflite::Model *model = tflite::GetModel(toycar_int8_model_data);
 
     static tflite::MicroMutableOpResolver<1> resolver;
     resolver.AddFullyConnected();
-
+    //printf("Start Execution2");
     tflite::MicroInterpreter interpreter(model, resolver, tensor_arena, tensor_arena_size);
-
     if (interpreter.AllocateTensors() != kTfLiteOk)
     {
         //TF_LITE_REPORT_ERROR(error_reporter, "ERROR: In AllocateTensors().");
@@ -49,20 +46,9 @@ int run_test()
         {
             //TF_LITE_REPORT_ERROR(error_reporter, "ERROR: In Invoke().");
             return -1;
-            asm volatile ("jr x0");
         }
-        *uart_data = 1;
-        //asm volatile ("csrr %0,mcycle"   : "=r" (end_cycles)  );
-        asm volatile ("unimp");
-        printf("Finished Execution\n");
-        //printf("Total Cycles = %d\n", end_cycles-start_cycles);
-        //asm volatile ("jr x0");
-        asm volatile ("nop");
-        asm volatile ("nop");
-        asm volatile ("nop");
-        asm volatile ("nop");
-        asm volatile ("nop");
-        asm volatile ("nop");
+        *uart_data = 1; //signal end of execution.  Causes fault in gem5 sim at current cycle count, verilator module reports current cycle count
+
         int32_t sum = 0;
         for (size_t j = 0; j < toycar_int8_input_data_len[i]; j++)
         {
@@ -73,8 +59,6 @@ int run_test()
         sum /= toycar_int8_input_data_len[i];
 
         int32_t diff = abs(sum - toycar_int8_output_data_ref[i]);
-
-        //store_result_int(diff);
         
         if (diff > 1)
         {

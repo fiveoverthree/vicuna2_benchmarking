@@ -2,7 +2,8 @@ set(RISCV_CMODEL "medany" CACHE STRING "mcmodel argument to the compiler")
 set(CMAKE_SYSTEM_PROCESSOR ${RISCV_ARCH})
 set(CMAKE_SYSTEM_NAME Generic)
 
-set(RISCV_GCC_PREFIX "${TOOLCHAIN_TOP}/GCC/multilib")
+set(RISCV_GCC_PREFIX "/home/parker/Desktop/vicuna_unit_testing_CVA6/working/vicuna2_unit_testing/toolchain/GCC/rv32im_zve32x")
+#set(RISCV_GCC_PREFIX "${TOOLCHAIN_TOP}/GCC/multilib")
 set(RISCV_GCC_BASENAME "riscv32-unknown-elf")
 
 #set(RISCV_LLVM_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../toolchain/llvm/bin" CACHE PATH "Install location of LLVM RISC-V toolchain.") ##shouldnt be needed
