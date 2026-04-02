@@ -5,7 +5,6 @@ import sys
 # import all of the SimObjects
 from m5.objects import *
 
-
 # Parse cmd line args.  In form "script.py VLEN BINARY_PATH"
 VLEN = sys.argv[1]
 binary = sys.argv[2]
@@ -35,8 +34,6 @@ print(isa.get_isa_string())
 # Create a memory bus, a system crossbar, in this case
 system.membus = NoncoherentXBar(frontend_latency=0,forward_latency=0,response_latency=0,width=4)
 
-
-
 # Add caches
 system.icache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 1, tgts_per_mshr = 1, size = '1kB')
 system.dcache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 1, tgts_per_mshr = 1, size = '1kB')
@@ -58,21 +55,7 @@ system.dcache.mem_side = system.membus.cpu_side_ports
 # create the interrupt controller for the CPU and connect to the membus
 system.cpus.createInterruptController()
 
-# For X86 only we make sure the interrupts care connect to memory.
-# Note: these are directly connected to the memory bus and are not cached.
-# For other ISA you should remove the following three lines.
-#system.cpu.interrupts[0].pio = system.membus.mem_side_ports
-#system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
-#system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
-
-# Create a DDR3 memory controller and connect it to the membus
-#system.mem_ctrl = MemCtrl()
-#system.mem_ctrl.dram = DDR3_1600_8x8()
-#system.mem_ctrl.dram.range = system.mem_ranges[0]
-#
 thispath = os.path.dirname(os.path.realpath(__file__))
-#binary ="/home/parker/Desktop/vicuna2_generic_benchmarking/vicuna2_benchmarking/build_programs/build/benchmark_sources/MLPerfTiny/toycar_int8_Gem5.elf"
-#binary ="/home/parker/Desktop/tinyml/vicuna2_tinyml_benchmarking/build_benchmarks/build/benchmark_sources/Int8/toycar/toycar_int8.elf"
 
 system.mem_ctrl = SimpleMemory(latency='10ns')
 system.mem_ctrl.port = system.membus.mem_side_ports

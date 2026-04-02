@@ -33,6 +33,7 @@ Import('env')
 import os
 import glob
 
+print("##################################################\nCUSTOM DIRECTORY INCLUDED\n##################################################")
 # rtlObject
 SimObject('rtlObject.py', sim_objects=["rtlObject"])
 Source('rtlObject.cc')
@@ -43,9 +44,8 @@ Source('rtlCore.cc')
 Source('wrapper_core.cc')
 
 ## Relevant Paths
-#model_path = os.path.abspath("/home/parker/Desktop/vicuna_unit_testing_CVA6/working/vicuna2_unit_testing/build_model/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
-verilator_path = os.path.abspath(os.environ["VERILATOR_MODEL_SRCS"])
-verilator_path = os.path.abspath(os.environ["VERILATOR_ROOT"])
+model_path = os.path.abspath(os.getcwd()+"/../../../../../verilator/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir") #TODO: Find a way to pass these variables in from Cmake higher level to not be relative coded
+verilator_path = os.path.abspath(os.getcwd()+"/../../../../../../toolchain/verilator/include")
 
 ## Include Verilator Sources
 Source(verilator_path+"/verilated.cpp")
@@ -62,23 +62,12 @@ for file in glob.glob(os.path.abspath(model_path+"/*.cpp")):
     Source(file)
     print(file)
 
-## Include Fifo Wrapper sources moved to same folder as others and included above explicitly
-# print("################")
-# print("FIFO Wrapper Path:")
-# for file in glob.glob(fifo_path+"/*.cc"):
-#     Source(file)
-#     print(file)
-
-
 ## Add Include Paths
 print("################")
 verilator_path_gtk = verilator_path + "/gtkwave/"
 verilator_path_vlt = verilator_path + "/vltstd/"
 
-#inc_path = verilator_path_gtk+":"+verilator_path_vlt+":"+verilator_path+":"+model_path+":"+fifo_path
-#env.AppendENVPath('INCLUDE', inc_path)
-
-env.Append(CPPPATH=[verilator_path_gtk, verilator_path_vlt, verilator_path, model_path, fifo_path])
+env.Append(CPPPATH=[verilator_path_gtk, verilator_path_vlt, verilator_path, model_path])
 env.Append(CPPDEFINES=["VM_SC=0", "VM_TRACE=1", "VL_THREADED=0"])
 
 # Flags

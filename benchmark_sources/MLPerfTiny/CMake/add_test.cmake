@@ -79,20 +79,15 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
 endmacro()
 
 macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
-    #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild
-    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt")
+    #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
+    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt") 
         message("Gem5 executable not present!  Building it now.")
         # Make sure verilator C files have been built
         if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
             message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
         endif()
-
-        execute_process(COMMAND export VERILATOR_ROOT=${TOOLCHAIN_TOP}/verilator/include
-                            WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
-        execute_process(COMMAND export VERILATOR_MODEL_SRCS=${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir
-                            WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
         #${nproc} not parsing correctly?
-        execute_process(COMMAND scons --include-dir=${GEM5_MODEL_DIR}/vicuna2_simobject build/ALL/gem5.opt -j32 
+        execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
                             WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
     endif()
 
@@ -134,6 +129,79 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
+endmacro()
+
+macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR)
+    #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild
+    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt")
+        message("Gem5 executable not present!  Building it now.")
+        # Make sure verilator C files have been built
+        if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
+            message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
+        endif()
+        #${nproc} not parsing correctly?
+        execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
+                            WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
+    endif()
+
+    set(TEST_NAME ${TEST}_Hybrid)
+
+    add_executable(${TEST_NAME})
+
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${SOURCE_DIR}
+        ${SOURCE_DIR}/model_data
+    )
+
+    target_sources(${TEST_NAME} PUBLIC
+        ${SOURCE_DIR}/${TEST}.cpp
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
+    )
+    #Set Linker
+    target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    #target_link_options(${TEST_NAME} PRIVATE "-nostdlib")
+
+    target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
+
+
+    #Link BSP
+    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm)
+
+    add_custom_command(TARGET ${TEST_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+                       )
+
+    #Hybrid Sim allows trace outputs, should be able to enable it here
+    # set(INST_TRACE_ARGS "${BUILD_DIR}/Testing/inst_trace.txt")
+
+    # if(TRACE)
+    #     set(MEM_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_mem.csv")
+    #     set(VCD_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_sig.vcd")
+
+    # else()
+    #     set(MEM_TRACE_ARGS "")
+    #     set(VCD_TRACE_ARGS "")
+    # endif()
+                       
+	              
+
+    #Add Test
+        add_test(NAME ${TEST_NAME} 
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/hybrid_caches.py ${BINARY_DIR}/${TEST_NAME}.elf
+             WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 60) #TODO: Find a reasonable timeout for these tests
+
+    message(STATUS "Successfully added ${TEST_NAME}")
+
 endmacro()
 
 ## TODO: Port Spike Cosim

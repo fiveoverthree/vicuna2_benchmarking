@@ -43,8 +43,6 @@
 
 #include "verilated_vcd_c.h"
 
-#include "rtl_packet_fifo.hh"
-
 class Wrapper_Core {
 
     public:
