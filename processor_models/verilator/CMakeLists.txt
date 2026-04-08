@@ -159,13 +159,13 @@ add_subdirectory(../../rtl/ rtl)
 
 ### Experimental Features flags
 #if(OLD_VICUNA)
-    set(VICUNA_MODE -DOLD_VICUNA) #
+set(VICUNA_MODE -DOLD_VICUNA)
 #endif()
 
 #This always needs to be set
 set(READ_MODE -DFORCE_ALIGNED_READS)
 #if(FORCE_ALIGNED_READS)
-    set(READ_MODE -DFORCE_ALIGNED_READS)
+    #set(READ_MODE -DFORCE_ALIGNED_READS)
 #endif()
 
 #CV32A60X sends Issue and Commit signals at the same time, change operating mode
