@@ -38,4 +38,7 @@ class rtlCore(rtlObject):
 
     imem_req  = RequestPort("Instruction Memory Request Port")
     dmem_req  = RequestPort("Data Memory Request Port")
+    tracing = Param.Bool(False,"Enable Trace Waveform")
+    printdreqs = Param.Bool(False,"Enable print statements for Data memory requests")
+    printireqs = Param.Bool(False,"Enable print statements for Instr memory requests")
     #Will need to add additional interface for vector memory port

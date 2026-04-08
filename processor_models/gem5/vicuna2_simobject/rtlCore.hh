@@ -135,6 +135,10 @@ class rtlCore : public rtlObject
     uint32_t cyclesStalled;
     uint32_t prev_addr;
 
+    bool tracing;
+    bool printdreqs;
+    bool printireqs;
+
 
 public:
 
