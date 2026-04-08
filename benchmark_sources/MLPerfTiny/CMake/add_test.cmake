@@ -69,19 +69,20 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
 
     #Add Test
     add_test(NAME ${TEST_NAME} 
-             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${INST_TRACE_ARGS} ${MEM_TRACE_ARGS} ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${INST_TRACE_ARGS} ${MEM_TRACE_ARGS} ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 30) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
 
 endmacro()
 
-macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
+macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
-    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt") 
+    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt" OR (REBUILD_GEM5 AND NOT REBUILT)) 
         message("Gem5 executable not present!  Building it now.")
+        set(REBUILT ON)
         # Make sure verilator C files have been built
         if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
             message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
@@ -91,7 +92,7 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
                             WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
     endif()
 
-    set(TEST_NAME ${TEST}_Gem5)
+    set(TEST_NAME ${TEST}_Gem5_${CONFIG_SCRIPT})
 
     add_executable(${TEST_NAME})
 
@@ -123,7 +124,7 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
                        )
     #Add Test # TODO: Current exit condition for gem5 is a segfault(from invalid uart write to be unified with other sim techniques) which reports test failed.  Improve exit conditions with gem5 API calls once generic testing structure is finished.
     add_test(NAME ${TEST_NAME} 
-             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/gem5_caches.py ${VREG_W} ${BINARY_DIR}/${TEST_NAME}.elf
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${VREG_W} ${BINARY_DIR}/${TEST_NAME}.elf
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
              
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
@@ -131,10 +132,11 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR)
     message(STATUS "Successfully added ${TEST_NAME}")
 endmacro()
 
-macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR)
+macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild
-    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt")
+    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt"  OR (REBUILD_GEM5 AND NOT REBUILT))
         message("Gem5 executable not present!  Building it now.")
+        set(REBUILT ON)
         # Make sure verilator C files have been built
         if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
             message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
@@ -144,7 +146,7 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR)
                             WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
     endif()
 
-    set(TEST_NAME ${TEST}_Hybrid)
+    set(TEST_NAME ${TEST}_Hybrid_${CONFIG_SCRIPT})
 
     add_executable(${TEST_NAME})
 
@@ -195,10 +197,10 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR)
 
     #Add Test
         add_test(NAME ${TEST_NAME} 
-             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/hybrid_caches.py ${BINARY_DIR}/${TEST_NAME}.elf
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${BINARY_DIR}/${TEST_NAME}.elf
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 60) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 120) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
 

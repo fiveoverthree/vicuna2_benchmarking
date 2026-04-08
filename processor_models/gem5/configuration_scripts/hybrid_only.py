@@ -18,19 +18,15 @@ system.clk_domain.voltage_domain = VoltageDomain()
 system.mem_mode = "timing"  # Use timing accesses
 system.mem_ranges = [AddrRange("512MiB")]  # Create an address range
 
-system.icache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
-system.dcache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
+#system.icache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
+#system.dcache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
 
 
 
 system.core = rtlCore()
 
-system.core.tracing = False
-system.core.printdreqs = False
-system.core.printireqs = False
-
-system.icache.cpu_side = system.core.imem_req
-system.dcache.cpu_side = system.core.dmem_req
+#system.icache.cpu_side = system.core.imem_req
+#system.dcache.cpu_side = system.core.dmem_req
 #system.dcache.cpu_side = system.dbus.mem_side_ports
 
 # binary = "/home/parker/Desktop/tinyml/vicuna2_tinyml_benchmarking/known_good_bin/128_hybrid/toycar/toycar_int8.bin"
@@ -43,8 +39,10 @@ system.bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_laten
 #monitor.trace = MemTraceProbe(trace_file="my_trace.trc.gz")
 
 
-system.icache.mem_side = system.bus.cpu_side_ports
-system.dcache.mem_side = system.bus.cpu_side_ports
+#system.icache.mem_side = system.bus.cpu_side_ports
+#system.dcache.mem_side = system.bus.cpu_side_ports
+system.core.imem_req = system.bus.cpu_side_ports
+system.core.dmem_req = system.bus.cpu_side_ports
 
 system.mem.port = system.bus.mem_side_ports
 
@@ -55,7 +53,7 @@ root = Root(full_system=False,system=system)
 
 # instantiate all of the objects we've created above
 m5.instantiate()
-m5.setMaxTick(300000000000)
+m5.setMaxTick(3000000000)
 
 print(f"Beginning simulation!")
 exit_event = m5.simulate()
