@@ -146,25 +146,27 @@ add_subdirectory(../../rtl/ rtl)
 ######################
 ### TRACE FLAGS
 
-if(TRACE)
-    add_definitions(-DTRACE_VCD) #This does nothing.  TODO: Confirm and remove.
-    set(TRACE TRACE)
+#if(TRACE)
+#    add_definitions(-DTRACE_VCD) #This does nothing.  TODO: Confirm and remove.
+   set(TRACE TRACE)
     
-    if(TRACE_FULL)
-        set(TRACE_FLAG  ) #no --trace-depth flag defaults to entire model
-    else()
-        set(TRACE_FLAG --trace-depth 2)
-    endif()
-endif()
+#    if(TRACE_FULL)
+#        set(TRACE_FLAG  ) #no --trace-depth flag defaults to entire model
+#    else()
+#        set(TRACE_FLAG --trace-depth 2)
+#    endif()
+#endif()
 
 ### Experimental Features flags
-if(OLD_VICUNA)
+#if(OLD_VICUNA)
     set(VICUNA_MODE -DOLD_VICUNA) #
-endif()
+#endif()
 
-if(FORCE_ALIGNED_READS)
+#This always needs to be set
+set(READ_MODE -DFORCE_ALIGNED_READS)
+#if(FORCE_ALIGNED_READS)
     set(READ_MODE -DFORCE_ALIGNED_READS)
-endif()
+#endif()
 
 #CV32A60X sends Issue and Commit signals at the same time, change operating mode
 if(${SCALAR_CORE} STREQUAL "cv32a60x")
