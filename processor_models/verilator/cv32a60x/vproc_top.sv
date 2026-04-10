@@ -86,7 +86,7 @@ module vproc_top
 
     output logic flush_o,
     output logic                            [           32-1:0] fetch_addr_o,
-            output logic log_reg_w_o,
+           output logic log_reg_w_o,
     output logic [           4:0] log_reg_w_addr_o,
     output logic [31:0] log_reg_w_data_o
     //////////////////////////////////////////
@@ -143,13 +143,13 @@ module vproc_top
       .obi_store_rsp_i  (obi_store_rsp),
 
       .obi_load_req_o   (obi_load_req),
-      .obi_load_rsp_i   (obi_load_rsp),
+      .obi_load_rsp_i   (obi_load_rsp)
       
-      .flush_o (flush_o),
-      .fetch_addr_o(fetch_addr_o),
-            .log_reg_w_o(log_reg_w_o),
-      .log_reg_w_addr_o(log_reg_w_addr_o),
-      .log_reg_w_data_o(log_reg_w_data_o)
+      // .flush_o (flush_o),
+      // .fetch_addr_o(fetch_addr_o),
+      // .log_reg_w_o(log_reg_w_o),
+      // .log_reg_w_addr_o(log_reg_w_addr_o),
+      // .log_reg_w_data_o(log_reg_w_data_o)
   );
 
   // -------------------

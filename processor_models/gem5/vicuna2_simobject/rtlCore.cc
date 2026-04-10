@@ -256,14 +256,15 @@ rtlCore::endRTLModel() {
 void
 rtlCore::tick() {
 
-    core->set_dport_gnt(!dmem_req.busy);
-    core->set_iport_gnt(!imem_req.busy);
+
     //TODO: Put signal to change resolution of trace to reduce size
     core->advanceTickCount();
     core->top->eval();
     core->advanceTickCount();
     core->top->eval();
     core->tick_hi();
+    core->set_dport_gnt(!dmem_req.busy);
+    core->set_iport_gnt(!imem_req.busy);
     core->top->eval();
 
     core->advanceTickCount();
@@ -309,8 +310,8 @@ rtlCore::tick() {
     if (prevMemAddr ==  (uint32_t)core->top->mem_iaddr_o)
     {
         cyclesStalled+=1;
-        if (cyclesStalled >= 1000000){
-            warn("Stalled for 1000000 cycles at addr %X : %d cycles\n", prevMemAddr, cyclesStat);
+        if (cyclesStalled >= 10000){
+            warn("Stalled for 10000 cycles at addr %X : %d cycles\n", prevMemAddr, cyclesStat);
             core->disableTracing();
             while(true){
                
@@ -328,27 +329,6 @@ rtlCore::tick() {
         // printf("Data: %X\n\n",(uint32_t)core->top->log_reg_w_data_o);
 
     }
-
-    if (core->top->flush_o)
-     {
-        //printf("############FLUSHED##########\n", cyclesStat);
-        imem_req.now_flush = true;
-        imem_req.resend_ooo_packet = false;
-        imem_req.num_valid_outstanding = 0;
-        for (int i = 0; i<2; i++)
-        {  
-            if  (imem_req.valid_out[i]){
-                //printf(" REQUEST FLUSHED (ID %d)\n", i);
-                 imem_req.outstanding[i]->req->setExtraData(1); //kill both outstanding requests.  (if one has arrived this cycle, it triggered the flush signal and has already been processed)
-            }
-        }
-         //imem_req.num_flush = imem_req.num_outstanding;
-         //imem_req.num_outstanding = 0;
-         //printf("Flushing %d Requests\n", imem_req.num_flush);
-         //printf("flushed outstanding requests\n");
-     }
-
-
 
     //Handle I Port req
     if (!imem_req.busy){

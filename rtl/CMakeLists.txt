@@ -216,9 +216,10 @@ set(CV32A60X_SOURCE ${CVA6_REPO_DIR}/vendor/pulp-platform/fpga-support/rtl/SyncD
 set(CV32A60X_INCLUDE ${CVA6_REPO_DIR}/core/include/
                      ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/include/
                      #${CVA6_REPO_DIR}/vendor/pulp-platform/common_cells/include/ #included in Vicuna repo
-                     #${CVA6_REPO_DIR}/vendor/pulp-platform/common_cells/src/     #
+                     ${CVA6_REPO_DIR}/vendor/pulp-platform/common_cells/src/
                      ${CVA6_REPO_DIR}/vendor/pulp-platform/axi/include/
                      ${CVA6_REPO_DIR}/common/local/util/
+                     #${CVA6_REPO_DIR}/core/cvfpu/src/common_cells/include/ #Include path for cvfpu #Might have issues with other copy of cvfpu in vicuna2 core
                      ${HPDCACHE_DIR}/rtl/include
                      PARENT_SCOPE)
 

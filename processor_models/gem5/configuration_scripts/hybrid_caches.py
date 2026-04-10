@@ -8,7 +8,7 @@ from m5.objects import *
 # Parse cmd line args.  In form "script.py BINARY_PATH"
 binary = sys.argv[1]
 
-system = System(cache_line_size = 32)
+system = System(cache_line_size = 64)
 
 system.clk_domain = SrcClockDomain()
 system.clk_domain.clock = "1GHz"
@@ -32,8 +32,6 @@ system.core.printireqs = False
 system.icache.cpu_side = system.core.imem_req
 system.dcache.cpu_side = system.core.dmem_req
 #system.dcache.cpu_side = system.dbus.mem_side_ports
-
-# binary = "/home/parker/Desktop/tinyml/vicuna2_tinyml_benchmarking/known_good_bin/128_hybrid/toycar/toycar_int8.bin"
 
 system.mem = SimpleMemory(image_file=binary,latency='10ns')
 
