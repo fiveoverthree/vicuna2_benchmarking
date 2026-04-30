@@ -3,8 +3,6 @@ message(STATUS "CMake Version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 
 ##########################
 #
-# Configuration variables:
-# - RV_ARCH : select the processor architecture configuration for compilation
 #
 # FEATURES:
 # - TRACE : enables .csv memory trace and .vcd signal trace output for unit tests.  Due to large file sizes, only trace of last test run will be kept.  Will be located in /build/Testing
@@ -12,11 +10,7 @@ message(STATUS "CMake Version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 #
 ##########################
 
-#Set this on the command line to change configuration.  Currently Supported: rv32im, rv32imzve32x, rv32imf, rv32imfzve32x, rv32imfzve32f
-set(RISCV_ARCH rv32im_zve32x CACHE STRING "Specify the configuration")
 set(MEM_LATENCY 1 CACHE STRING "Memory latency")
-set(MIN_VLEN 128 CACHE STRING "LLVM Autovectorizer parameter for minimum VLEN in bits")  #Does the same thing as _ZvlXXXb architecture string
-set(MEM_W 32 CACHE STRING "Width of main memory data port in bits")
 
 option(TRACE        "Enable trace outputs"                                         OFF)
 option(PRINT        "Enable print statements"                                      OFF)
