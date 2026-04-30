@@ -259,6 +259,7 @@ gem5::PacketPtr Wrapper_Core::get_dport_packet(){
 
 void Wrapper_Core::set_dport_gnt(bool val){
     top->mem_gnt_i = val;
+    top->mem_vec_gnt_i = val;
 }
 void Wrapper_Core::set_dmem_resp(gem5::PacketPtr pkt){
     uint32_t *data_ptr = pkt->getPtr<uint32_t>();

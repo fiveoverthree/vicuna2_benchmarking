@@ -89,10 +89,13 @@ int main(int argc, char **argv) {
     unsigned char **mem_rdata_queue  = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency); //memory data port
     bool **mem_meta_queue   = (bool **)malloc(sizeof(bool *) * mem_latency); //memory metadata port
 
+    bool *mem_wvalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
+
+
     for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
     {
         mem_rdata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
-        mem_meta_queue[queue_pos] = (bool *)malloc(sizeof(bool) * 2); //2 metadata values (err and request source)
+        mem_meta_queue[queue_pos] = (bool *)malloc(sizeof(bool) * 3); //2 metadata values (err, request source, iswrite)
     }
 
     bool *mem_ivalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
@@ -114,11 +117,11 @@ int main(int argc, char **argv) {
     //////////////////////////
     VerilatedTrace_t *tfp = NULL;
     if (argc == 10) {
-        #ifdef TRACE_VCD
+        //#ifdef TRACE_VCD
         tfp = new VerilatedTrace_t;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
         tfp->open(argv[9]);
-        #endif
+        //#endif
     }
 
 
@@ -169,9 +172,6 @@ int main(int argc, char **argv) {
     }
     top->mem_rvalid_i = 0;
     top->mem_irvalid_i = 0;
-    top->mem_gnt_i = 1;
-    top->mem_ignt_i = 1;
-    top->mem_wvalid_i = 0;
     top->clk_i        = 0;
     top->rst_ni       = 0;
     for (i = 0; i < 10; i++) {
@@ -189,25 +189,26 @@ int main(int argc, char **argv) {
     top->eval();
     update_stats(top);
     update_vcd(tfp, 0, 0);
-
-        
-    
+    top->mem_ignt_i = 1;
+    top->mem_gnt_i = 1;
     char *endptr;
     int vreg_w = strtol(argv[7], &endptr, 10);
-
-    int  cycles_begin_trace = 6200851;  //Traces begin at this cycle count.  TODO: expose to the command line
-    int  cycles_end_trace = 6700851;    //Traces end at this cycle count.  TODO: expose to the command line
+    
+    int  cycles_begin_trace = 781919;  //Traces begin at this cycle count.  TODO: expose to the command line
+    int  cycles_end_trace =   791919;    //Traces end at this cycle count.  TODO: expose to the command line
 
     // variables to keep track of vector tests successes/failures
     int v_test_success = 0;
     int v_test_failure = 0;
     
-    int cycles_here = 0;
+    bool dmem_req_limit = true;
 
-    bool w_valid_q;
+    int num_outstanding_imem = 0;
 
-    w_valid_q = false;
+    int num_read_req = 0;
 
+    bool imem_busy = false;
+    bool dmem_busy = false;
 
     //////////////////////////
     //Program Execution - Infinite loop with defined exit conditions
@@ -218,85 +219,180 @@ int main(int argc, char **argv) {
         // Advance to next clock cycle
         //////////////////////////
         //advance_cycle_half(top, 0);
-
-        top->clk_i = 1;
-        cycles_here++;
+        // top->mem_gnt_i = !dmem_busy;
+        // top->mem_ignt_i = !imem_busy;
+        top->mem_vec_gnt_i = !dmem_busy; //Vicuna treats gnt signal as memory interface ready signal.  CVA6 treats gnt signal as a response meaning transaction accepted. TODO: Unify this
         top->eval();
-        update_stats(top);
-        update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
+        //update_stats(top);
+        //update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
+        top->clk_i = 1;
+        //Memory interface is never blocked, so always granted starting after init cycles
+        
+       
+       
+        top->eval();
+        //update_stats(top);
+        //update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
 
         //////////////////////////
         //Update Memory interfaces
         //////////////////////////
 
 
+        // Update data memory interface signals
+        for (int i = 0; i < mem_w/8; i++)
+        {
+            unsigned char* port = (unsigned char*)&(top->mem_rdata_i);
+            port[i]  = mem_rdata_queue[mem_latency-1][i];
+        }
+        if (!mem_meta_queue[mem_latency-1][2]){
+            top->mem_rvalid_i = mem_rvalid_queue[mem_latency-1];
+            top->mem_wvalid_i = false;
+        } else {
+            if (mem_meta_queue[mem_latency-1][1])
+            {
+                top->mem_rvalid_i = mem_rvalid_queue[mem_latency-1]; //Vector signalling over rvalid signal always
+                top->mem_wvalid_i = false;
+            } else {
+                top->mem_rvalid_i = false;
+                top->mem_wvalid_i = mem_rvalid_queue[mem_latency-1];
+            }
+            
+        }
+        top->mem_err_i   = mem_meta_queue[mem_latency-1][0];
+        top->mem_src_i   = mem_meta_queue[mem_latency-1][1];
+
+        //Next, advance fifo buffers by one cycle
+        for (int i = mem_latency-1; i > 0; i--) {
+            for (int j = 0; j < mem_w/8; j++)
+            {
+                mem_rdata_queue[i][j] = mem_rdata_queue[i-1][j];
+            }
+            mem_rvalid_queue[i] = mem_rvalid_queue[i-1];
+            for (int j = 0; j < 3; j++)
+            {
+                mem_meta_queue[i][j]   = mem_meta_queue[i-1][j];
+            }
+        }
+
+        mem_rvalid_queue[0] = false;
+        mem_meta_queue[0][0]   = false;
+        mem_meta_queue[0][1]   = false;
+        mem_meta_queue[0][2]   = false;
+
+        top->mem_gnt_i = !dmem_busy & top->mem_req_o;
+        top->mem_ignt_i = !imem_busy & top->mem_ireq_o;
+        update_mem_write(top, (top->mem_addr_o & 0xFFFFFFFC), (top->mem_req_o && top->mem_we_o && top->mem_gnt_i), (top->mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_wdata_o), (unsigned char*)&(top->mem_be_o), (bool*)&(top->mem_wvalid_i), mem_rvalid_queue, mem_meta_queue, mem);
+        update_mem_load(top,  (top->mem_addr_o & 0xFFFFFFFC), (top->mem_req_o && !top->mem_we_o && top->mem_gnt_i), top->mem_we_o, (top->mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_rdata_i), (bool*)&(top->mem_rvalid_i), (bool*)&(top->mem_err_i), (bool*)&(top->mem_src_i), mem_rdata_queue, mem_rvalid_queue, mem_meta_queue, mem);
+
+        //Update instruction memory interface.  Never a write here.  Metadata field repurposed to store obi.id field, used internally for the index in the fetchbuffer.
+
+        for (int i = 0; i < 32/8; i++)
+        {
+            unsigned char* port = (unsigned char*)&(top->mem_irdata_i);
+            port[i]  = mem_idata_queue[mem_latency-1][i];
+        }
+        top->mem_irvalid_i = mem_ivalid_queue[mem_latency-1];
+        top->mem_ierr_i   = mem_imeta_queue[mem_latency-1][0];
+        top->mem_iid_i   = mem_imeta_queue[mem_latency-1][1];
+
+        //Next, advance fifo buffers by one cycle
+        for (int i = mem_latency-1; i > 0; i--) {
+            for (int j = 0; j < 32/8; j++)
+            {
+                mem_idata_queue[i][j] = mem_idata_queue[i-1][j];
+            }
+            mem_ivalid_queue[i] = mem_ivalid_queue[i-1];
+            for (int j = 0; j < 3; j++)
+            {
+                mem_imeta_queue[i][j]   = mem_imeta_queue[i-1][j];
+            }
+        }
+        mem_ivalid_queue[0] = false;
+        mem_imeta_queue[0][0]   = false; //never an error (conflicts with write signal)
+        mem_imeta_queue[0][1]   = false;
+        mem_imeta_queue[0][2]   = false;
+
+        update_mem_load(top, (top->mem_iaddr_o), (top->mem_ireq_o && top->mem_ignt_i), false, (top->mem_iid_o), 32, mem_latency, mem_sz, (unsigned char*)&(top->mem_irdata_i), (bool*)&(top->mem_irvalid_i), (bool*)&(top->mem_ierr_i), (bool*)&(top->mem_iid_i), mem_idata_queue, mem_ivalid_queue, mem_imeta_queue, mem);
+        top->eval();
+
+
+
+        if (top->mem_req_o && top->mem_gnt_i || top->mem_req_o && top->mem_vec_gnt_i)
+        {
+            dmem_busy = true;
+        }
+        if (top->mem_rvalid_i || top->mem_wvalid_i) {
+            dmem_busy = false;
+        }
+        //fprintf(stderr, "\n----------------------\nimem_req: %d\n", top->mem_ireq_o);
+        //fprintf(stderr, "imem_gnt: %d\n", top->mem_ignt_i);
+        if (top->mem_ireq_o && top->mem_ignt_i)
+        {
+            //fprintf(stderr, "Increment:\n");
+            num_outstanding_imem++;
+            if (num_outstanding_imem == 1)
+            {
+                imem_busy = true; //only two outstanding request allowed
+            }
+        }
+        if (top->mem_irvalid_i)
+        {
+            //fprintf(stderr, "Decrement:\n");
+            num_outstanding_imem--;
+             imem_busy = false; 
+        }
+
+        if (top->mem_req_o && !top->mem_we_o && top->mem_gnt_i)
+        {
+            // fprintf(stderr, "Mem READ REQ\n");
+            // fprintf(stderr, "ADDR = %X\n", (top->mem_addr_o & 0xFFFFFFFC));
+            // fprintf(stderr, "Cycle# = %d\n\n------------\n", cycles);
+            // fprintf(stderr, "REQ# = %d\n\n------------\n", num_read_req);
+            num_read_req++;
+        }
+
+         if ((bool)(top->mem_rvalid_i))
+        {
+            // fprintf(stderr, "Mem READ DATA\n");
+            // fprintf(stderr, "DATA = %X\n", (uint32_t)(top->mem_rdata_i));
+            // fprintf(stderr, "REQ# = %d\n\n------------\n", num_read_req);
+        }
+
+        if (top->mem_req_o && top->mem_we_o && top->mem_gnt_i)
+        {
+        //     fprintf(stderr, "Mem Write REQ\n");
+        //     fprintf(stderr, "ADDR = %X\n", (top->mem_addr_o & 0xFFFFFFFC));
+        //     fprintf(stderr, "DATA = %X\n\n------------\n", (uint32_t)(top->mem_wdata_o));
+        }
+        // if (num_read_req >= 3297){
+        //     break;
+        // }
+
+        top->eval();
+     
+
+        //Use memory mapped IO at address 0x400 to signal success or failure
+        char w_port;
+        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000400u, &w_port)){
+            if (w_port == 0)
+            {
+                fprintf(stderr, "SUCCESS: TEST PASS - TEST %d - Output Match\n", v_test_failure+v_test_success+2);
+                v_test_success++;
+                 break;
+            } else {
+                fprintf(stderr, "ERROR: TEST FAILURE - Output Mismatch - TEST %d - Output Mismatch\n", v_test_failure+v_test_success+2);
+                v_test_failure++;
+                 break;
+                
+            }
+           
+        }      
+
 
         //advance_cycle_half(top, 1);
         top->clk_i = 0;
         top->eval();
-                        //if flush issued, clear all outstanding valid requests
-        if (top->flush_o)
-        {
-            top->mem_ignt_i = 1;
-            for (int i = mem_latency-1; i >= 0; i--) {
-                mem_ivalid_queue[i] = false;
-                
-            }
-        }
-        top->eval();
-      
-        top->mem_wvalid_i = w_valid_q;
-        w_valid_q = false;
-                //Update write interface
-        update_mem_write(top, top->mem_addr_o, (top->mem_req_o && top->mem_we_o)&& top->mem_gnt_i, mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_wdata_o), (unsigned char*)&(top->mem_be_o), mem_rvalid_queue, mem);
-        //Update read interface
-        update_mem_load(top, top->mem_addr_o, (top->mem_req_o && !top->mem_we_o)&& top->mem_gnt_i, top->mem_we_o, (top->mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_rdata_i), (bool*)&(top->mem_rvalid_i), (bool*)&(top->mem_err_i), (bool*)&(top->mem_src_i), mem_rdata_queue, mem_rvalid_queue, mem_meta_queue, mem);
-        //Update instruction memory interface.  Never a write here.  Metadata field repurposed to store obi.id field, used internally for the index in the fetchbuffer.
-        update_mem_load(top, top->mem_iaddr_o, top->mem_ireq_o && top->mem_ignt_i, false, (top->mem_iid_o), 32, mem_latency, mem_sz, (unsigned char*)&(top->mem_irdata_i), (bool*)&(top->mem_irvalid_i), (bool*)&(top->mem_ierr_i), (bool*)&(top->mem_iid_i), mem_idata_queue, mem_ivalid_queue, mem_imeta_queue, mem);
-
-        if (top->mem_ireq_o && top->mem_ignt_i)
-        {
-            top->mem_ignt_i = 0;
-        } else if (top->mem_irvalid_i) {
-            top->mem_ignt_i = 1;
-        }
-
-        if (top->mem_req_o && top->mem_gnt_i)
-        {
-            top->mem_gnt_i = 0;
-            if (top->mem_we_o && !top->mem_src_o){
-                w_valid_q = true;
-            }
-        }
-        if (top->mem_rvalid_i || top->mem_wvalid_i) {
-            top->mem_gnt_i = 1;
-        }
-
-
-        top->eval();
-        update_stats(top);
-        update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
-
-        //Use memory mapped IO at address 0x400 to signal success or failure
-        char w_port;
-        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o && top->mem_gnt_i), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000400u, &w_port)){
-            if (w_port == 0)
-            {
-                //fprintf(stderr, "SUCCESS: TEST PASS - TEST %d - Output Match\n", v_test_failure+v_test_success+2);
-                v_test_success++;
-            } else {
-                //fprintf(stderr, "ERROR: TEST FAILURE - Output Mismatch - TEST %d - Output Mismatch\n", v_test_failure+v_test_success+2);
-                fprintf(stderr, "CurCycles = %d\n", cycles_here);
-                v_test_failure++;
-                if (v_test_failure > 1)
-                {
-                    break;
-                }
-                
-            }
-        }      
-
-
         update_stats(top);
         update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
 

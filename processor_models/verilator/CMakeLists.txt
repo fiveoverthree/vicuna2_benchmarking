@@ -147,7 +147,7 @@ add_subdirectory(../../rtl/ rtl)
 ### TRACE FLAGS
 
 #if(TRACE)
-#    add_definitions(-DTRACE_VCD) #This does nothing.  TODO: Confirm and remove.
+   add_definitions(-DTRACE_VCD)
    set(TRACE TRACE)
     
 #    if(TRACE_FULL)

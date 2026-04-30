@@ -9,7 +9,7 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
         message(FATAL_ERROR "Verilator Model executable not present!  Build it and try again.")
     endif()
 
-    set(TEST_NAME ${TEST})
+    set(TEST_NAME ${TEST}_Verilator)
 
     add_executable(${TEST_NAME})
 
@@ -54,11 +54,13 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
                        )
     
     #VERY DANGEROUS TO USE TRACE
-    set(INST_TRACE_ARGS "${BUILD_DIR}/Testing/inst_trace.txt")
+
+    set(INST_TRACE_ARGS "${TEST_BUILD_DIR}/inst_trace.txt")
 
     if(TRACE)
-        set(MEM_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_mem.csv")
-        set(VCD_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_sig.vcd")
+        message("${TEST_BUILD_DIR}/last_test_sig.vcd")
+        set(MEM_TRACE_ARGS "${TEST_BUILD_DIR}/last_test_mem.csv")
+        set(VCD_TRACE_ARGS "${TEST_BUILD_DIR}last_test_sig.vcd")
 
     else()
         set(MEM_TRACE_ARGS "")
@@ -69,10 +71,11 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
 
     #Add Test
     add_test(NAME ${TEST_NAME} 
-             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${INST_TRACE_ARGS} ${MEM_TRACE_ARGS} ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             #./home/parker/Desktop/Fixing_CVA6_MEM_Interface/vicuna2_unit_testing/build_model/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 30) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT  1000) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
 
