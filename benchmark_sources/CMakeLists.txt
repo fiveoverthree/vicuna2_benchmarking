@@ -1,14 +1,20 @@
 ########
-# Add framework directory including bsps and support files
+# Add framework directory including bsps, support files, and simulator specific functions.
 add_subdirectory(framework framework)
 ########
 
-## TODO: Add selection to enable/disable different benchmark suites.  Only one allowed at a time
+#Select benchmark suite build directory.  Since each benchmark suite uses a different compiler setup, only one can be active at a time.
+if(NOT BENCHMARK_SUITE)
+    message(FATAL_ERROR "No Benchmark Suite selected.  Select a valid suite with -DBENCHMARK_SUITE=(name)")
+endif()
 
-# Add MLPerfTiny benchmark directory
-add_subdirectory(MLPerfTiny MLPerfTiny)
+if(${BENCHMARK_SUITE} STREQUAL "generic_cpp")
+    add_subdirectory(generic_cpp generic_cpp)
+elseif(${BENCHMARK_SUITE} STREQUAL "MLPerfTiny")
+    add_subdirectory(MLPerfTiny MLPerfTiny)
+else()
+    message(FATAL_ERROR "Unsupported Benchmark Suite selected.  Select a valid suite with -DBENCHMARK_SUITE=(name)")
+endif()
 
-########
-# To add new benchmark suites, add the new suite folder along with a flag to select it from the command line
-########
+
 

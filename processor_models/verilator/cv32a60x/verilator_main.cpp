@@ -194,8 +194,8 @@ int main(int argc, char **argv) {
     char *endptr;
     int vreg_w = strtol(argv[7], &endptr, 10);
     
-    int  cycles_begin_trace = 781919;  //Traces begin at this cycle count.  TODO: expose to the command line
-    int  cycles_end_trace =   791919;    //Traces end at this cycle count.  TODO: expose to the command line
+    int  cycles_begin_trace = 0;  //Traces begin at this cycle count.  TODO: expose to the command line
+    int  cycles_end_trace =   0;    //Traces end at this cycle count.  TODO: expose to the command line
 
     // variables to keep track of vector tests successes/failures
     int v_test_success = 0;
@@ -219,12 +219,8 @@ int main(int argc, char **argv) {
         // Advance to next clock cycle
         //////////////////////////
         //advance_cycle_half(top, 0);
-        // top->mem_gnt_i = !dmem_busy;
-        // top->mem_ignt_i = !imem_busy;
         top->mem_vec_gnt_i = !dmem_busy; //Vicuna treats gnt signal as memory interface ready signal.  CVA6 treats gnt signal as a response meaning transaction accepted. TODO: Unify this
         top->eval();
-        //update_stats(top);
-        //update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
         top->clk_i = 1;
         //Memory interface is never blocked, so always granted starting after init cycles
         
@@ -309,7 +305,7 @@ int main(int argc, char **argv) {
             }
         }
         mem_ivalid_queue[0] = false;
-        mem_imeta_queue[0][0]   = false; //never an error (conflicts with write signal)
+        mem_imeta_queue[0][0]   = false; //never an error
         mem_imeta_queue[0][1]   = false;
         mem_imeta_queue[0][2]   = false;
 
@@ -317,7 +313,7 @@ int main(int argc, char **argv) {
         top->eval();
 
 
-
+        //Currently only one outstanding DMEM request allowed
         if (top->mem_req_o && top->mem_gnt_i || top->mem_req_o && top->mem_vec_gnt_i)
         {
             dmem_busy = true;
@@ -325,11 +321,9 @@ int main(int argc, char **argv) {
         if (top->mem_rvalid_i || top->mem_wvalid_i) {
             dmem_busy = false;
         }
-        //fprintf(stderr, "\n----------------------\nimem_req: %d\n", top->mem_ireq_o);
-        //fprintf(stderr, "imem_gnt: %d\n", top->mem_ignt_i);
+        //Currently only 2 outstanding IMEM requests allowed
         if (top->mem_ireq_o && top->mem_ignt_i)
         {
-            //fprintf(stderr, "Increment:\n");
             num_outstanding_imem++;
             if (num_outstanding_imem == 1)
             {
@@ -338,65 +332,36 @@ int main(int argc, char **argv) {
         }
         if (top->mem_irvalid_i)
         {
-            //fprintf(stderr, "Decrement:\n");
             num_outstanding_imem--;
-             imem_busy = false; 
+            imem_busy = false; 
         }
-
-        if (top->mem_req_o && !top->mem_we_o && top->mem_gnt_i)
-        {
-            // fprintf(stderr, "Mem READ REQ\n");
-            // fprintf(stderr, "ADDR = %X\n", (top->mem_addr_o & 0xFFFFFFFC));
-            // fprintf(stderr, "Cycle# = %d\n\n------------\n", cycles);
-            // fprintf(stderr, "REQ# = %d\n\n------------\n", num_read_req);
-            num_read_req++;
-        }
-
-         if ((bool)(top->mem_rvalid_i))
-        {
-            // fprintf(stderr, "Mem READ DATA\n");
-            // fprintf(stderr, "DATA = %X\n", (uint32_t)(top->mem_rdata_i));
-            // fprintf(stderr, "REQ# = %d\n\n------------\n", num_read_req);
-        }
-
-        if (top->mem_req_o && top->mem_we_o && top->mem_gnt_i)
-        {
-        //     fprintf(stderr, "Mem Write REQ\n");
-        //     fprintf(stderr, "ADDR = %X\n", (top->mem_addr_o & 0xFFFFFFFC));
-        //     fprintf(stderr, "DATA = %X\n\n------------\n", (uint32_t)(top->mem_wdata_o));
-        }
-        // if (num_read_req >= 3297){
-        //     break;
-        // }
 
         top->eval();
-     
 
-        //Use memory mapped IO at address 0x400 to signal success or failure
+        //Use memory mapped IO at address 0x408 to signal success or failure
         char w_port;
-        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000400u, &w_port)){
+        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000408u, &w_port)){
             if (w_port == 0)
             {
-                fprintf(stderr, "SUCCESS: TEST PASS - TEST %d - Output Match\n", v_test_failure+v_test_success+2);
-                v_test_success++;
-                 break;
+                fprintf(stderr, "SUCCESS: TEST PASS\n");
+                exit_code = 0;
+                break;
             } else {
-                fprintf(stderr, "ERROR: TEST FAILURE - Output Mismatch - TEST %d - Output Mismatch\n", v_test_failure+v_test_success+2);
-                v_test_failure++;
-                 break;
-                
+                fprintf(stderr, "ERROR: TEST FAILURE - FAILED OUTPUT VALIDATION\n");
+                exit_code = 1;
+                break;
             }
-           
-        }      
+        }
+        //Use memory mapped UART at address 0x400 to print outputs
+        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000400u, &w_port)){
+            putc(w_port, stderr);
+        }
 
-
-        //advance_cycle_half(top, 1);
         top->clk_i = 0;
         top->eval();
         update_stats(top);
         update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
 
-        
         //////////////////////////
         // Check Exit Conditions
         //////////////////////////
@@ -408,47 +373,14 @@ int main(int argc, char **argv) {
             exit_code = 1;
             break;
         }
-        
-        if (check_PC(top,  0x00000074u)) {
-            fprintf(stderr, "PROGRAM EXECUTION ENDED CORRECTLY\n");
-            if ( v_test_failure > 0)
-            {
-                exit_code = 1;
-            }
-            break;
-        }
 
+        //1000 cycles at the same address is a stall.
         if (check_stall(top, 1000)){
             exit_code = 1;
             break;
         }
 
-        //////////
-        // Outputs + Statistics
-        //////////
-
-        // update_xreg_commit(top, fxreglog);
-        // update_freg_commit(top, ffreglog);
-        // update_vreg_commit(top, vreg_w, fvreglog); 
-        
     }
-    
-    ////////////////////////
-    // On program completion, report statistics
-    ////////////////////////
-    report_stats(); 
-
-    fprintf(stderr, "Tests Passed     : %d / %d\n", v_test_success, (v_test_success+v_test_failure));
-    if ((v_test_success+v_test_failure+1) != num_cases)//+1 because test case numbers for chipsalliance start numbering at 2 for some reason
-    {
-        fprintf(stderr, "ERROR: Result from all test cases not reported!     : %d reported vs %d total\n", (v_test_success+v_test_failure), num_cases-1); 
-        fprintf(stderr, "NOTE: ChipsAlliance Test numbering starts at 2\n"); 
-        exit_code=1;
-    }
-
-    // write dump file
-    dump_mem_region(dump_start, dump_end, mem, dump_path);
-    
 
 #if defined(TRACE_VCD) || defined(TRACE_FST)
     if (tfp != NULL)
@@ -474,11 +406,6 @@ int main(int argc, char **argv) {
     free(mem_idata_queue);
     free(mem_meta_queue);
     free(mem_imeta_queue);
-
-    fclose(fprogs);
-    fclose(fxreglog);
-    fclose(fvreglog);
-    fclose(ffreglog);
 
     return exit_code;
 }
