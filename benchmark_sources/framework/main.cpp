@@ -1,28 +1,22 @@
-#include "test_data.hpp"
-#include "run_test.hpp"
-#include "terminate_benchmark.h"
+#include "simulator.hpp"
+#include "benchmark.hpp"
 
-//Generic main function for testing.  run_test() is unique for each test case.
+//Includes two separate headers
+// - "benchmark.hpp" contains benchmark specific functions.  Class defined for each benchmark.
+// - "simulator.hpp" contains simulator specific functions.  Class defined for each simulator framework.
 
 
 int main() 
 { 
-   
-    bool all_pass = true;
-    //run all available test cases
-    for (uint32_t i=0; i < NUM_TESTS; i++)
-    {
-        bool cur_test = run_test(i);
-        all_pass = all_pass & cur_test;
-    }
-    
-    if(all_pass)
-    {
-        benchmark_success();
-    }
-    else
-    {
-        benchmark_failure();
-    }
+    //Declare Benchmark and Simulator
+    Benchmark benchmark;
+    Simulator simulator;
+
+    //Run benchmark
+    simulator.begin_measurement();
+    benchmark.run_benchmark();
+    simulator.end_measurement();
+    bool correct = benchmark.validate_benchmark();
+    simulator.terminate(correct);
 
 } 

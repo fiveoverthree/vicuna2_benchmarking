@@ -2,9 +2,8 @@
 #define MATMUL_HPP
 #include <cstdint>
 
-#include "vicuna_crt.h"
-#include "terminate_benchmark.h"
-#include "uart.h"
+#include "vicuna_crt.hpp"
+#include "uart.hpp"
 
 void mul( const int16_t * pSrcA, const int16_t * pSrcB, int32_t * pDst, uint32_t vecLen);
 

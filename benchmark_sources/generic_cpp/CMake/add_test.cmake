@@ -4,21 +4,15 @@ macro(add_benchmark TEST TEST_NUM)
     add_executable(${TEST_NAME})
 
     target_include_directories(${TEST_NAME} PUBLIC
-        ${VICUNA_BSP_TOP}/../                   # Becomes Framework top
-        ${VICUNA_BSP_TOP}/lib/
+        ${FRAMEWORK_TOP}/
         ${PROGRAMS_TOP}/${TEST}
         ${PROGRAMS_TOP}/${TEST}/test_data
     )
 
     target_sources(${TEST_NAME} PUBLIC
-        ${VICUNA_BSP_TOP}/../main.cpp           # Becomes Framework top
-        ${PROGRAMS_TOP}/${TEST}/run_test.hpp
-        ${PROGRAMS_TOP}/${TEST}/run_test.cpp
-        ${PROGRAMS_TOP}/${TEST}/test_data.hpp
-        ${PROGRAMS_TOP}/${TEST}/test_data/test_data_${TEST_NUM}.cpp
-        ${PROGRAMS_TOP}/${TEST}/${TEST}.hpp
-        ${PROGRAMS_TOP}/${TEST}/${TEST}.cpp
-        #${VICUNA_BSP_TOP}/lib/vicuna_crt.h
+        ${VICUNA_BSP_TOP}/main.cpp                                  # Framework
+        ${PROGRAMS_TOP}/${TEST}/test_data/test_data_${TEST_NUM}.cpp # Benchmark
+        ${PROGRAMS_TOP}/${TEST}/${TEST}.cpp                         # Benchmark
     )
 
     #Set Linker
@@ -28,7 +22,7 @@ macro(add_benchmark TEST TEST_NUM)
 
 
     #Link BSP
-    target_link_libraries(${TEST_NAME} PUBLIC bsp_Vicuna UART_Vicuna)
+    target_link_libraries(${TEST_NAME} PUBLIC bsp_Vicuna UART_Vicuna sim_Verilator)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
