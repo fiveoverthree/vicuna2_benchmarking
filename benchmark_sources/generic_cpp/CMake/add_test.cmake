@@ -10,7 +10,7 @@ macro(add_benchmark TEST TEST_NUM)
     )
 
     target_sources(${TEST_NAME} PUBLIC
-        ${VICUNA_BSP_TOP}/main.cpp                                  # Framework
+        ${FRAMEWORK_TOP}/main.cpp                                   # Framework
         ${PROGRAMS_TOP}/${TEST}/test_data/test_data_${TEST_NUM}.cpp # Benchmark
         ${PROGRAMS_TOP}/${TEST}/${TEST}.cpp                         # Benchmark
     )
