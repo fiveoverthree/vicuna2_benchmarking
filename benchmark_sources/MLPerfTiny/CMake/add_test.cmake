@@ -16,10 +16,11 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
     target_include_directories(${TEST_NAME} PRIVATE
         ${SOURCE_DIR}
         ${SOURCE_DIR}/model_data
+        ${FRAMEWORK_TOP}/
     )
 
     target_sources(${TEST_NAME} PUBLIC
-        ${SOURCE_DIR}/${TEST}.cpp
+        ${FRAMEWORK_TOP}/main.cpp  
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
@@ -37,7 +38,7 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
 
 
     #Link BSP
-    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm)
+    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm sim_Verilator)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
@@ -72,7 +73,6 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
     #Add Test
     add_test(NAME ${TEST_NAME} 
              COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
-             #./home/parker/Desktop/Fixing_CVA6_MEM_Interface/vicuna2_unit_testing/build_model/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT  1000) #TODO: Find a reasonable timeout for these tests

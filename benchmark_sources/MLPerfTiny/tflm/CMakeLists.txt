@@ -529,4 +529,5 @@ target_include_directories(tflm PUBLIC
 target_link_libraries(tflm PRIVATE
   m
   stdc++
+  UART_Vicuna
 )
