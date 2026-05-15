@@ -26,32 +26,32 @@ class Benchmark
 
     void report_diff(int32_t* output, int32_t* reference, uint32_t rows, uint32_t cols)
     {
-        printf("Your Result:\n\n");
+        uart_printf("Your Result:\n\n");
         for(uint32_t i=0; i<rows; i++)
         {
             for(uint32_t j=0; j<cols; j++)
             {
-                printf("%d ",output[i*cols + j]);
+                uart_printf("%d ",output[i*cols + j]);
             }
-            printf("\n");
+            uart_printf("\n");
         }
-        printf("\n");
-        printf("Reference Result:\n\n");
+        uart_printf("\n");
+        uart_printf("Reference Result:\n\n");
         for(uint32_t i=0; i<rows; i++)
         {
             for(uint32_t j=0; j<cols; j++)
             {
-                printf("%d ",reference[i*cols + j]);
+                uart_printf("%d ",reference[i*cols + j]);
             }
-            printf("\n");
+            uart_printf("\n");
         }
-        printf("\n");
+        uart_printf("\n");
     }
 
     void report_metadata(uint32_t numRowsA, uint32_t numColsA, uint32_t numColsB)
     {
-        printf("Testcase:\n\n");
-        printf("Matrix A [%d x %d] X Matrix B [%d x %d]:\n\n", numRowsA, numColsA, numColsA, numColsB);
+        uart_printf("Testcase:\n\n");
+        uart_printf("Matrix A [%d x %d] X Matrix B [%d x %d]:\n\n", numRowsA, numColsA, numColsA, numColsB);
 
     }
 
@@ -74,33 +74,33 @@ class Benchmark
     };
 
     //Call code to be benchmarked
-    inline bool run_benchmark()
+    inline int run_benchmark()
     {
         matmul(mat_a, mat_b, output, numColsA, numRowsA, numColsB);
-        return true; //always success
+        return 0; //always success
     };
 
     //Validate Output
-    bool validate_benchmark()
+    int validate_benchmark()
     {
         report_metadata(numRowsA, numColsA, numColsB);
         int32_t* reference = (int32_t*)mat_c_array[0];
-        bool match = true;
+        int code = 0;
         for(uint32_t i=0; i<numRowsA; i++)
         {
             for(uint32_t j=0; j<numColsB; j++)
             {
                 if (output[i*numColsB + j] != reference[i*numColsB + j])
                 {
-                    match = false;
+                    code = 1;
                 }
             }
         }
 
-        if (!match) {
+        if (!(code == 0)) {
             report_diff(output, reference, numRowsA, numColsB);
         }
-        return match;
+        return code;
     };
     //Cleanup any allocatations
     ~Benchmark(){

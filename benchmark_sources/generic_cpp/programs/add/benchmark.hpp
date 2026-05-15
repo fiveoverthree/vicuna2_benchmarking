@@ -58,30 +58,30 @@ class Benchmark
     };
 
     //Call code to be benchmarked
-    inline bool run_benchmark()
+    inline int run_benchmark()
     {
         add(vec_a, vec_b, output, vecLen);
-        return true; //always success
+        return 0; //always success
     };
     //Validate Output
-    bool validate_benchmark()
+    int validate_benchmark()
     {
         report_metadata(vecLen);
         int16_t* reference = (int16_t*)vec_c_array[0];
-        bool match = true;
+        int code = 0;
         for(uint32_t i=0; i<vecLen; i++)
         {
             if (output[i] != reference[i])
             {
-                match = false;
+                code = 1;
                 break;
             }
         }
-        if (!match) {
+        if (!(code == 0)) {
             report_diff(output, reference, vecLen);
         }
 
-        return match;
+        return code;
     };
     //Cleanup any allocatations
     ~Benchmark(){

@@ -26,35 +26,35 @@ class Benchmark
 
     void report_diff(int32_t* output, int32_t* reference, uint32_t output_len, uint32_t num_channels)
     {
-        printf("Your Result:\n\n");
+        uart_printf("Your Result:\n\n");
         for(uint32_t j=0; j<num_channels; j++)
         {
             for(uint32_t i=0; i<output_len; i++)
             {
-                printf("%d ",output[j*output_len + i]);
+                uart_printf("%d ",output[j*output_len + i]);
             }
-            printf("\n");
+            uart_printf("\n");
         }
-        printf("\n");
-        printf("Reference Result:\n\n");
+        uart_printf("\n");
+        uart_printf("Reference Result:\n\n");
         for(uint32_t j=0; j<num_channels; j++)
         {
             for(uint32_t i=0; i<output_len; i++)
             {
-                    printf("%d ",reference[j*output_len + i]);
+                    uart_printf("%d ",reference[j*output_len + i]);
             }
-            printf("\n");
+            uart_printf("\n");
         }
-        printf("\n");
+        uart_printf("\n");
     }
 
     void report_metadata(uint32_t output_len, uint32_t filter_len, uint32_t num_channels)
     {
-        printf("Testcase:\n\n");
-        printf("Multi-Channel FIR Filter\n");
-        printf("Input %d elements long\n", output_len);
-        printf("Filter %d elements long\n", filter_len);
-        printf("%d Channels\n\n", num_channels);
+        uart_printf("Testcase:\n\n");
+        uart_printf("Multi-Channel FIR Filter\n");
+        uart_printf("Input %d elements long\n", output_len);
+        uart_printf("Filter %d elements long\n", filter_len);
+        uart_printf("%d Channels\n\n", num_channels);
     }
 
     public:
@@ -76,29 +76,29 @@ class Benchmark
     };
 
     //Call code to be benchmarked
-    inline bool run_benchmark()
+    inline int run_benchmark()
     {
         fir(input, filter, output, input_len, filter_len, filter_channels);
-        return true; //always success
+        return 0; //always success
     };
     //Validate Output
-    bool validate_benchmark()
+    int validate_benchmark()
     {
         report_metadata(input_len, filter_len, filter_channels);
         int32_t* reference = (int32_t*)ref_output_array[0];
-        bool match = true;
+        int code = 0;
         for(uint32_t i=0; i<(input_len - (filter_len - 1))*filter_channels; i++)
         {
             if (output[i] != reference[i])
             {
-                match = false;
+                code = 1;
             }
         }
 
-        if (!match) {
+        if (!(code == 0)) {
             report_diff(output, reference, (input_len - (filter_len - 1)), filter_channels);
         }
-        return match;
+        return code;
     };
     //Cleanup any allocatations
     ~Benchmark(){

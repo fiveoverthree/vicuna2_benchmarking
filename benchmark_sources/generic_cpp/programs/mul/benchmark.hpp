@@ -24,24 +24,24 @@ class Benchmark
 
     void report_diff(int32_t* output, int32_t* reference, uint32_t vecLen)
     {
-        printf("Your Result:\n\n");
+        uart_printf("Your Result:\n\n");
         for(uint32_t i=0; i<vecLen; i++)
         {
-            printf("%d ",output[i]);
+            uart_printf("%d ",output[i]);
         }
-        printf("\n");
-        printf("Reference Result:\n\n");
+        uart_printf("\n");
+        uart_printf("Reference Result:\n\n");
         for(uint32_t i=0; i<vecLen; i++)
         {
-                printf("%d ",reference[i]);
+                uart_printf("%d ",reference[i]);
         }
-        printf("\n");
+        uart_printf("\n");
     }
 
     void report_metadata(uint32_t vecLen)
     {
-        printf("Testcase:\n\n");
-        printf("Vector Multiplication - Vectors %d elements long:\n\n", vecLen);
+        uart_printf("Testcase:\n\n");
+        uart_printf("Vector Multiplication - Vectors %d elements long:\n\n", vecLen);
 
     }
 
@@ -62,30 +62,30 @@ class Benchmark
     };
 
     //Call code to be benchmarked
-    inline bool run_benchmark()
+    inline int run_benchmark()
     {
         mul(vec_a, vec_b, output, vecLen);
-        return true; //always success
+        return 0; //always success
     };
 
     //Validate Output
-    bool validate_benchmark()
+    int validate_benchmark()
     {
         report_metadata(vecLen);
         int32_t* reference = (int32_t*)vec_c_array[0];
-        bool match = true;
+        int code = 0;
         for(uint32_t i=0; i<vecLen; i++)
         {
             if (output[i] != reference[i])
             {
-                match = false;
+                code = 1;
             }
         }
 
-        if (!match) {
+        if (!(code == 0)) {
             report_diff(output, output, vecLen);
         }
-        return match;
+        return code;
     };
     //Cleanup any allocatations
     ~Benchmark(){
