@@ -86,22 +86,6 @@ void Wrapper_Core::tick_hi() {
     top->eval();
 
     advanceTickCount();
-
-    //  if (top->flush_o)
-    //  {
-    //      killOutstanding = true;
-    //      //printf("flushed outstanding requests\n");
-    //  }
-
-    // top->clk_i = 0;
-    // //also reset all valid input signals
-    // top->mem_irvalid_i = false;
-    // top->mem_rvalid_i = false;
-    // set_iport_gnt(false);
-    // set_dport_gnt(false);
-    // top->eval();
-
-    // advanceTickCount();
 }
 void Wrapper_Core::tick_lo() {
 
@@ -109,22 +93,6 @@ void Wrapper_Core::tick_lo() {
     top->eval();
 
     advanceTickCount();
-
-    // if (top->flush_o && ! top->mem_ireq_o)
-    // {
-    //     //killOutstanding = true;
-    //     //printf("flushed outstanding requests\n");
-    // }
-
-    // top->clk_i = 0;
-    // //also reset all valid input signals
-    // top->mem_irvalid_i = false;
-    // top->mem_rvalid_i = false;
-    // set_iport_gnt(false);
-    // set_dport_gnt(false);
-    // top->eval();
-
-    //advanceTickCount();
 }
 
 void Wrapper_Core::advanceTickCount() {
@@ -166,16 +134,12 @@ gem5::PacketPtr Wrapper_Core::get_iport_packet(){
 }
 
 void Wrapper_Core::set_iport_gnt(bool val){
-    top->mem_ignt_i = val;
+    top->mem_ignt_i = val & top->mem_ireq_o;
 }
 void Wrapper_Core::set_imem_resp(gem5::PacketPtr pkt){
     uint32_t *data_ptr = pkt->getPtr<uint32_t>();
 
     if (!killOutstanding){
-        //warn("IMEM RESP");
-        //printf("Cycles: %d", cyclesStat);
-        //printf("%X\n",pkt->getAddr());
-        //printf("%X\n",*pkt->getPtr<uint32_t>());
         top->mem_irdata_i = *data_ptr;
         top->mem_irvalid_i = true;
         if (pkt->req->taskId()){
@@ -185,9 +149,6 @@ void Wrapper_Core::set_imem_resp(gem5::PacketPtr pkt){
         }
     } else {
         killOutstanding = false;
-        //warn("Killed RESP");
-        //printf("%X\n",pkt->getAddr());
-        //printf("%X\n",*pkt->getPtr<uint32_t>());
     }
 
 }
@@ -258,8 +219,8 @@ gem5::PacketPtr Wrapper_Core::get_dport_packet(){
 }
 
 void Wrapper_Core::set_dport_gnt(bool val){
-    top->mem_gnt_i = val;
-    top->mem_vec_gnt_i = val;
+    top->mem_gnt_i = val & top->mem_req_o;
+    //top->mem_vec_gnt_i = val;
 }
 void Wrapper_Core::set_dmem_resp(gem5::PacketPtr pkt){
     uint32_t *data_ptr = pkt->getPtr<uint32_t>();

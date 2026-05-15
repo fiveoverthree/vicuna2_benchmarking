@@ -52,10 +52,7 @@ rtlCore::IMemReqPort::recvTimingResp(PacketPtr pkt)
 {
     //can only handle one response per cycle
     if (pkt->req->getExtraData() == 0){
-            
-
         if (!resp_busy){
-
             //if (true){
             if (pkt->req->taskId() == next_id)
             {
@@ -66,21 +63,13 @@ rtlCore::IMemReqPort::recvTimingResp(PacketPtr pkt)
                     printf("ID:  %X\n",pkt->req->taskId());
                     printf("%X\n\n",*pkt->getPtr<uint32_t>());
                 }
-            
                 num_outstanding-=1;
                 num_valid_outstanding-=1;
                 owner->handleImemResp(pkt);
 
                 next_id = !next_id; 
-                
-                
                 resp_busy = true;
-
-                // if (!resend_ooo_packet)
-                // {
                 busy=false;
-                //}
-                
                 valid_out[pkt->req->taskId()]=false;
                 return true;
             } else {
@@ -112,7 +101,7 @@ rtlCore::IMemReqPort::recvTimingResp(PacketPtr pkt)
     } else {
         
         if (owner->printireqs)
-                {
+        {
             printf("-----Killed Packet-------\n");
             printf("%X\n",pkt->getAddr());
             printf("%X\n",*pkt->getPtr<uint32_t>());
@@ -230,6 +219,9 @@ rtlCore::initRTLModel() {
     // Init RTL Wrapper
     warn("Init RTLCORE");
     core = new Wrapper_Core(false, "trace.vcd");
+    if (tracing){
+        core->enableTracing(); //todo: disable tracing
+    }
     core->set_dport_gnt(false);
     core->set_iport_gnt(false);
     core->set_rst(false);
@@ -263,8 +255,11 @@ rtlCore::tick() {
     core->advanceTickCount();
     core->top->eval();
     core->tick_hi();
+    core->top->mem_vec_gnt_i = !dmem_req.busy; 
     core->set_dport_gnt(!dmem_req.busy);
     core->set_iport_gnt(!imem_req.busy);
+    
+    
     core->top->eval();
 
     core->advanceTickCount();
@@ -276,31 +271,44 @@ rtlCore::tick() {
         if (core->get_dport_valid()){
             //warn("attempt DREQ");
             PacketPtr curReq = core->get_dport_packet();
-            
-            bool success = dmem_req.sendTimingReq(curReq);
-            if (success){
-                if (printdreqs)
-                {
-                    warn("Successful Transmission ##### DMEM");
-                    printf("%X\n",curReq->getAddr());
-                    printf("%X\n",curReq->req->taskId());
-                    printf("Timestamp: %d\n",curReq->req->time());
-                    warn("                ");
-                }
 
-                //Allow only one outstanding dreq at once
-                //
-                dmem_req.busy=true;
-                dmem_req.prev_succ=true;//Deprecated signal?
-                 
-            } else {
-                //warn("Failed DMEM Request, Retry #####");
-                //printf("%X\n",curReq->getAddr());
-                //printf("%X\n",curReq->req->taskId());
-                //printf("Timestamp: %d\n",curReq->req->time());
-                 //warn("                ");
-                dpkt_stalled = curReq;
-                dmem_req.busy=true;
+            if (curReq->getAddr() == 0x400) //Don't send memory mapped accesses.  These cause segfaults in gem5
+            {
+                if (tracing){
+                    core->enableTracing(); //todo: disable tracing
+                }
+                printf("Cycles: %d\n", cyclesStat);
+            }
+            else if(curReq->getAddr() == 0x408)
+            {
+                printf("TERMINATING\n");
+            }
+            else {
+                bool success = dmem_req.sendTimingReq(curReq);
+                if (success){
+                    if (printdreqs)
+                    {
+                        warn("Successful Transmission ##### DMEM");
+                        printf("%X\n",curReq->getAddr());
+                        printf("%X\n",curReq->req->taskId());
+                        printf("Timestamp: %d\n",curReq->req->time());
+                        warn("                ");
+                    }
+
+                    //Allow only one outstanding dreq at once
+                    //
+                    dmem_req.busy=true;
+                    dmem_req.prev_succ=true;//Deprecated signal?
+                    
+                } else {
+                    //warn("Failed DMEM Request, Retry #####");
+                    //printf("%X\n",curReq->getAddr());
+                    //printf("%X\n",curReq->req->taskId());
+                    //printf("Timestamp: %d\n",curReq->req->time());
+                    //warn("                ");
+                    dpkt_stalled = curReq;
+                    dmem_req.busy=true;
+                }
             }
         }
     } else {
@@ -313,7 +321,7 @@ rtlCore::tick() {
         if (cyclesStalled >= 10000){
             warn("Stalled for 10000 cycles at addr %X : %d cycles\n", prevMemAddr, cyclesStat);
             core->disableTracing();
-            while(true){
+            while(true){ //Todo: terminate
                
             }
         }
@@ -367,19 +375,6 @@ rtlCore::tick() {
                     while(true){
                     }
                 }
-                if (curReq->getAddr() == 0x2000)
-                {
-                    warn("MAIN REACHED ######");
-                    if (tracing){
-                        core->enableTracing();
-                    }
-                    printf("Cycles start : %d\n", cyclesStat);
-                }
-                if (curReq->getAddr() == 0x2140)
-                {
-                    warn("Successful execution ######");
-                    printf("Cycles End : %d\n", cyclesStat);
-                }
             } else {
                 //warn("Failed I Transmission ######");
                //printf("%X\n\n\n",curReq->getAddr());
@@ -391,10 +386,9 @@ rtlCore::tick() {
     }else {
         //warn("imem blocked");
     }
-
     core->advanceTickCount();
     //Give status feedback
-    if (cyclesStat % 1000000 == 0)
+    if (cyclesStat % 10000 == 0)
     {
         printf("Current Cycles = %d\n Current PC = %X\n", cyclesStat, core->top->mem_iaddr_o);
     }
