@@ -9,4 +9,17 @@ target_include_directories(sim_Verilator INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/verilator
 )
 
-#Add library for Verilator only simulation specific implementations
+#Add header library for gem5 only simulation specific implementations
+add_library(sim_gem5 INTERFACE)
+
+target_include_directories(sim_gem5 INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/gem5
+)
+
+#Add library for hybrid simulation specific implementations
+add_library(sim_hybrid INTERFACE)
+
+target_include_directories(sim_hybrid INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/hybrid
+)
+

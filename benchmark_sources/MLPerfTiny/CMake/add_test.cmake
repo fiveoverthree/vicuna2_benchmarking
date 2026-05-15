@@ -102,10 +102,11 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
     target_include_directories(${TEST_NAME} PRIVATE
         ${SOURCE_DIR}
         ${SOURCE_DIR}/model_data
+        ${FRAMEWORK_TOP}/
     )
 
     target_sources(${TEST_NAME} PUBLIC
-        ${SOURCE_DIR}/${TEST}.cpp
+        ${FRAMEWORK_TOP}/main.cpp  
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
@@ -119,7 +120,7 @@ macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
     #target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
     #target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
     #Link tflm (for gem5 only build no bsp/) TODO: UART_VICUNA isnt needed, but include wants it
-    target_link_libraries(${TEST_NAME} PRIVATE tflm UART_Vicuna bsp_Vicuna)
+    target_link_libraries(${TEST_NAME} PRIVATE tflm sim_gem5)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
@@ -156,10 +157,11 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
     target_include_directories(${TEST_NAME} PRIVATE
         ${SOURCE_DIR}
         ${SOURCE_DIR}/model_data
+        ${FRAMEWORK_TOP}/
     )
 
     target_sources(${TEST_NAME} PUBLIC
-        ${SOURCE_DIR}/${TEST}.cpp
+        ${FRAMEWORK_TOP}/main.cpp
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
@@ -177,7 +179,7 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
 
 
     #Link BSP
-    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm)
+    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm sim_hybrid)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
@@ -203,7 +205,7 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
              COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${BINARY_DIR}/${TEST_NAME}.elf
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 120) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 60) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
 

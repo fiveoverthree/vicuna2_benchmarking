@@ -16,7 +16,8 @@ int main()
     simulator.begin_measurement();
     benchmark.run_benchmark();
     simulator.end_measurement();
-    bool correct = benchmark.validate_benchmark();
-    simulator.terminate(correct);
+    int code = benchmark.validate_benchmark();
+    simulator.terminate(code);
+    return code;
 
 } 

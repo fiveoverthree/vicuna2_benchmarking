@@ -3,7 +3,7 @@
 
 #include <cstdint>
 //BSP includes
-#include "uart.hpp"
+//#include "uart.hpp"
 //Includes for benchmark
 #include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -39,7 +39,7 @@ class Benchmark
         };
 
     //Call code to be benchmarked
-    inline bool run_benchmark()
+    inline int run_benchmark()
     {
         //Due to scoping issue for the tflite::MicroInterpreter, init must be inside here.  Fixes to dynamic allocation should allow this to be separated correctly
         model = tflite::GetModel(toycar_int8_model_data);
@@ -48,7 +48,8 @@ class Benchmark
         tflite::MicroInterpreter interpreter(model, resolver, tensor_arena, tensor_arena_size);
         if (interpreter.AllocateTensors() != kTfLiteOk)
         {
-            uart_printf("Failed to allocate tensors!\n");
+            return 1;
+            //uart_printf("Failed to allocate tensors!\n");
         }
         memcpy(interpreter.input(0)->data.int8, (int8_t *)toycar_int8_input_data[0], toycar_int8_input_data_len[0]); //Only one test case
 
@@ -58,8 +59,8 @@ class Benchmark
 
         if (interpreter.Invoke() != kTfLiteOk)
         {
-            uart_printf("Failed in Invoke!\n");
-            return false;
+            //uart_printf("Failed in Invoke!\n");
+            return 2;
         } 
         //End measurement for real
         simulator.end_measurement();
@@ -79,21 +80,21 @@ class Benchmark
         
         if (diff > 1)
         {
-            uart_printf("ERROR: at #%d, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
+            //uart_printf("ERROR: at #%d, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
             simulator.terminate(false); //Terminate simulation instead of returning (due to scoping problem)
-            return false;
+            return 3;
         }
         else
         {
-            uart_printf("Sample #%d pass, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
+            //uart_printf("Sample #%d pass, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
             simulator.terminate(true); //Terminate simulation instead of returning (due to scoping problem)
-            return true;
+            return 0;
         }
 
     };
 
     //Validate Output
-    bool validate_benchmark()
+    int validate_benchmark()
     {
         //Not used due to scoping issue
         return true;
