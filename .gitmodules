@@ -28,3 +28,6 @@
 [submodule "benchmark_sources/framework/vicuna2_bsp"]
 	path = benchmark_sources/framework/vicuna2_bsp
 	url = https://github.com/vproc/vicuna2_bsp.git
+[submodule "benchmark_sources/MLPerfTiny/tflm/muriscv-nn"]
+	path = benchmark_sources/MLPerfTiny/tflm/muriscv-nn
+	url = https://github.com/tum-ei-eda/muriscv-nn.git

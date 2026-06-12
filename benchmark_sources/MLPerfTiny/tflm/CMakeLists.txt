@@ -24,17 +24,34 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../CMake/add_test.cmake)
 
 ######
 # Check if TFLM source tree has been generated.  If not, generate it.
+# When using MURISCV-NN, a source tree needs to be generated with CMSIS kernels
 ######
+if(MURISCVNN)
 
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree")
-    message("Tensorflow Source Tree not found.  Generating now.")
-    execute_process(COMMAND mkdir tflm_source_tree
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    execute_process(COMMAND python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py ../tflm_source_tree
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tflite-micro)
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree_cmsis")
+      message("Tensorflow Source Tree not found for muRISCV-NN.  Generating now.")
+      execute_process(COMMAND mkdir tflm_source_tree_cmsis
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      execute_process(COMMAND python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py ../tflm_source_tree_cmsis --makefile_options="OPTIMIZED_KERNEL_DIR=cmsis_nn"
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tflite-micro)
+  endif()
+
+  set(TFLM_SOURCE_TREE_TOP ${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree_cmsis)
+
+else()
+
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree")
+      message("Tensorflow Source Tree not found.  Generating now.")
+      execute_process(COMMAND mkdir tflm_source_tree
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      execute_process(COMMAND python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py ../tflm_source_tree
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tflite-micro)
+  endif()
+
+  set(TFLM_SOURCE_TREE_TOP ${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree)
+
+
 endif()
-
-set(TFLM_SOURCE_TREE_TOP ${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree)
 
 ######
 # Build TFLM as a library
@@ -126,50 +143,65 @@ if(RISCV_ZFH)
     
     endif()
 else()
+  if (NOT MURISCVNN)
     message("Using TFLM Default Reference Operations and Kernels")
-    set(FH_INCLUDE "")
-    #No FH support, use original sources
-    set(FH_SUPPORT_SRCS
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/dequantize.h 
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/dequantize.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/dequantize_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/fully_connected.h
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/conv.h
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/depthwiseconv_float.h
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/pooling.h
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape_common.cc
-    
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/softmax.h
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax.cc
-    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax_common.cc
-    
+      set(FH_INCLUDE "")
+      #No FH support, use original sources
+      set(FH_SUPPORT_SRCS
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/dequantize.h 
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/dequantize.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/dequantize_common.cc
+      
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/fully_connected.h
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected_common.cc
+      
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/conv.h
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv_common.cc
+      
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/depthwiseconv_float.h
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv.cc
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv_common.cc
+      
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/pooling.h
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling.cc
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling_common.cc
+      
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape.cc
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape_common.cc
+      
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/softmax.h
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax.cc
+      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax_common.cc
     )
+  endif()
 endif()
 
 
-
-set(TFLM_SRCS
-  #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected.cc
+if(MURISCVNN)
+  set(TFLM_SRCS
+    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc
+    ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected_common.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/add.cc
+  # #  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/depthwise_conv.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/pooling.cc
+  #   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc
+  )
+  #add_definitions(-DUSE_PORTABLE_VEXT)
+  add_definitions(-DCMSIS_NN)
+else()
+  set(TFLM_SRCS
+  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/mul.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/add.cc
-# ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/svdf.cc
-  #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv.cc
+  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/svdf.cc
+  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv.cc
 )
-
+endif()
 
 set(TFLM_SRCS
   ${TFLM_SRCS}
@@ -257,7 +289,7 @@ set(TFLM_SRCS
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax.h
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pack.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/broadcast_args.cc
-  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/maximum_minimum.cc
+#  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/maximum_minimum.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/mul_common.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/quantize.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/hard_swish_common.cc
@@ -265,7 +297,7 @@ set(TFLM_SRCS
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cumsum.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/dequantize.h
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/prelu.h
-  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pad.cc
+#  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pad.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/floor.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/split_v.cc
  # ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/svdf_common.cc
@@ -364,7 +396,7 @@ set(TFLM_SRCS
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/elu.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/var_handle.cc
  # ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/unidirectional_sequence_lstm_test_config.h
-  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/transpose.cc
+#  ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/transpose.cc
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/logistic_common.cc
   
   ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/debug_log.cc
@@ -508,26 +540,58 @@ set(TFLM_THIRD_PARTY_SRCS
   ${TFLM_SOURCE_TREE_TOP}/third_party/ruy/ruy/profiler/instrumentation.h
 )
 
-target_sources(tflm PRIVATE
+######
+# include muRISC-V NN
+######
+if(MURISCVNN)
+  target_sources(tflm PRIVATE
   ${TFLM_SRCS}
   ${TFLM_THIRD_PARTY_SRCS}
   ${FH_SUPPORT_SRCS}
-)
+  )
 
-target_include_directories(tflm PUBLIC
+  target_include_directories(tflm PUBLIC
   ${TFLM_SOURCE_TREE_TOP}
   ${TFLM_SOURCE_TREE_TOP}/third_party/ruy
   ${TFLM_SOURCE_TREE_TOP}/third_party/gemmlowp
   ${TFLM_SOURCE_TREE_TOP}/third_party/kissfft
   ${TFLM_SOURCE_TREE_TOP}/third_party/flatbuffers
   ${TFLM_SOURCE_TREE_TOP}/third_party/flatbuffers/include
-  ${CMAKE_SOURCE_DIR}/Include
-  ${CMAKE_SOURCE_DIR}/Include/CMSIS/NN
+  ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Include
+  ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Include/CMSIS/NN/
   ${FH_INCLUDE}
-)
+  )
 
-target_link_libraries(tflm PRIVATE
+  target_link_libraries(tflm PRIVATE
   m
   stdc++
   UART_Vicuna
-)
+  muriscvnn
+  )
+
+  add_subdirectory(muriscv-nn/Source muriscv-nn)
+
+else()
+
+  target_sources(tflm PRIVATE
+    ${TFLM_SRCS}
+    ${TFLM_THIRD_PARTY_SRCS}
+    ${FH_SUPPORT_SRCS}
+  )
+
+  target_include_directories(tflm PUBLIC
+    ${TFLM_SOURCE_TREE_TOP}
+    ${TFLM_SOURCE_TREE_TOP}/third_party/ruy
+    ${TFLM_SOURCE_TREE_TOP}/third_party/gemmlowp
+    ${TFLM_SOURCE_TREE_TOP}/third_party/kissfft
+    ${TFLM_SOURCE_TREE_TOP}/third_party/flatbuffers
+    ${TFLM_SOURCE_TREE_TOP}/third_party/flatbuffers/include
+    ${FH_INCLUDE}
+  )
+
+  target_link_libraries(tflm PRIVATE
+    m
+    stdc++
+    UART_Vicuna
+  )
+endif()
