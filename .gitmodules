@@ -34,3 +34,6 @@
 [submodule "toolchain/riscv-isa-sim"]
 	path = toolchain/riscv-isa-sim
 	url = https://github.com/riscv-software-src/riscv-isa-sim.git
+[submodule "benchmark_sources/embench_dsp/embench-dsp"]
+	path = benchmark_sources/embench_dsp/embench-dsp
+	url = https://github.com/embench/embench-dsp.git
