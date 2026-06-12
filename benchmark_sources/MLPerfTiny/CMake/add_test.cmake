@@ -199,8 +199,7 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
     # endif()
                        
 	              
-
-    #Add Test
+  #Add Test
         add_test(NAME ${TEST_NAME} 
              COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${BINARY_DIR}/${TEST_NAME}.elf
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -211,55 +210,65 @@ macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
 
 endmacro()
 
-## TODO: Port Spike Cosim
-# macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
+macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
+    #Build spike if it isnt present
+    if(NOT EXISTS "${TOOLCHAIN_TOP}/spike/bin/spike")
+        message("Spike Executable not present, building")
+        execute_process(COMMAND mkdir build 
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim)
+        execute_process(COMMAND ../configure --prefix=${TOOLCHAIN_TOP}/spike
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
+        execute_process(COMMAND make -j8
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
+        execute_process(COMMAND make install
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
+    endif()
 
-#     set(TEST_NAME ${TEST}_Spike) #need to add a suffix, ctest doesnt allow 'test' as a test name
+    set(TEST_NAME ${TEST}_Spike)
     
-#     add_executable(${TEST_NAME})
+    add_executable(${TEST_NAME})
 
-#     target_include_directories(${TEST_NAME} PRIVATE
-#         ${SOURCE_DIR}
-#         ${SOURCE_DIR}/model_data
-#     )
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${SOURCE_DIR}
+        ${SOURCE_DIR}/model_data
+        ${FRAMEWORK_TOP}/
+    )
 
-#     target_sources(${TEST_NAME} PUBLIC
-#         ${SOURCE_DIR}/${TEST}.cpp
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
-#     )
+    target_sources(${TEST_NAME} PUBLIC
+        ${FRAMEWORK_TOP}/main.cpp
+        ${FRAMEWORK_TOP}/spike/crt0.S    
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
+    )
 
 #     #Set Linker
-#     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
 
-#     target_link_options(${TEST_NAME} PRIVATE "-T${BSP_TOP}/Spike_Support/lld_link.ld")
+    target_link_options(${TEST_NAME} PRIVATE "-T${FRAMEWORK_TOP}/spike/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
+    #Link tflm and spike sim libraries
+    target_link_libraries(${TEST_NAME} PRIVATE tflm sim_spike)   
 
-    
-
-
-#     #Link BSP
-#     target_link_libraries(${TEST_NAME} PRIVATE bsp_Spike tflm)   
-
-#     add_custom_command(TARGET ${TEST_NAME}
-#                         COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)    
+    add_custom_command(TARGET ${TEST_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)    
 	              
 
-#     #Add Test
-#     add_test(NAME ${TEST_NAME} 
-#              COMMAND ${SPIKE_DIR}/spike --isa=rv32imf_zicntr_zihpm_zfh_zve32f_zvfh_zvl${MIN_VLEN}b --log-commits --log=/home/parker/Desktop/Vicuna_Repo_Refactor/benchmarks/tinyml_benchmarks/build_benchmarks/build/Testing/register_commits_Spike.txt ${TEST_BUILD_DIR}/${TEST_NAME}.elf   #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
-#              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
+    #Add Test
+     add_test(NAME ${TEST_NAME} 
+              COMMAND ${TOOLCHAIN_TOP}/spike/bin/spike --isa=rv32imf_zicntr_zihpm_zfh_zve32f_zvfh_zvl${VREG_W}b ${TEST_BUILD_DIR}/${TEST_NAME}.elf 
+              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-#     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
 
-#     message(STATUS "Successfully added ${TEST_NAME}")
+    message(STATUS "Successfully added ${TEST_NAME}")
 
-# endmacro()
+ endmacro()
 
 
 

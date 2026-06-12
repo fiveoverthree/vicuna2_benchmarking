@@ -5,9 +5,11 @@ processor_models/verilator/build/*
 build_programs/build/*
 #Ignore built GCCs
 toolchain/GCC/*
+toolchain/spike/*
 
 #Simulator Specific Ignores
 
 #Benchmark Specific Ignores
 #MLPerfTiny
 benchmark_sources/MLPerfTiny/tflm/tflm_source_tree/
+benchmark_sources/MLPerfTiny/tflm/tflm_source_tree_cmsis/

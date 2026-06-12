@@ -23,3 +23,10 @@ target_include_directories(sim_hybrid INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/hybrid
 )
 
+#Add library for hybrid simulation specific implementations
+add_library(sim_spike INTERFACE)
+
+target_include_directories(sim_spike INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/spike
+)
+

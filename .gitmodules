@@ -31,3 +31,6 @@
 [submodule "benchmark_sources/MLPerfTiny/tflm/muriscv-nn"]
 	path = benchmark_sources/MLPerfTiny/tflm/muriscv-nn
 	url = https://github.com/tum-ei-eda/muriscv-nn.git
+[submodule "toolchain/riscv-isa-sim"]
+	path = toolchain/riscv-isa-sim
+	url = https://github.com/riscv-software-src/riscv-isa-sim.git
