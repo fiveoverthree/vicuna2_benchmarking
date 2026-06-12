@@ -81,13 +81,13 @@ class Benchmark
         if (diff > 1)
         {
             //uart_printf("ERROR: at #%d, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
-            simulator.terminate(false); //Terminate simulation instead of returning (due to scoping problem)
+            simulator.terminate(1); //Terminate simulation with return code 1 instead of returning (due to scoping problem)
             return 3;
         }
         else
         {
             //uart_printf("Sample #%d pass, sum %d ref %d diff %d \n", 0, sum, toycar_int8_output_data_ref[0], diff);
-            simulator.terminate(true); //Terminate simulation instead of returning (due to scoping problem)
+            simulator.terminate(0); //Terminate simulation with return code 0 instead of returning (due to scoping problem)
             return 0;
         }
 
