@@ -120,7 +120,9 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX .elf)
 set(CMAKE_EXECUTABLE_SUFFIX_ASM .elf) 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf") #For some reason setting this works for ASM files but SUFFIX_ASM doesnt
 
-set(CMAKE_TOOLCHAIN_FILE "/home/parker/Desktop/vicuna2_generic_benchmarking/vicuna2_benchmarking/benchmark_sources/${BENCHMARK_SUITE}/CMake/gcc_toolchain.cmake") #This declaration must happen before the project is declared.  TODO: Current setup only allows one toolchain file to be selected.  Ideally this is done on a per benchmark folder basis.
+#TODO: Need to check for valid compiler before setting the toolchain file
+set(CMAKE_TOOLCHAIN_FILE "/home/jpjones/Desktop/vicuna_muriscv_nn/vicuna2_benchmarking/benchmark_sources/MLPerfTiny/CMake/gcc_toolchain.cmake")
+#set(CMAKE_TOOLCHAIN_FILE "/home/parker/Desktop/vicuna2_generic_benchmarking/vicuna2_benchmarking/benchmark_sources/${BENCHMARK_SUITE}/CMake/gcc_toolchain.cmake") #This declaration must happen before the project is declared.  TODO: Current setup only allows one toolchain file to be selected.  Ideally this is done on a per benchmark folder basis.
 project(Vicuna2_Benchmarking_Environment LANGUAGES C CXX ASM DESCRIPTION "Vicuna2 Benchmarking Environment")
 include(CTest)
 
