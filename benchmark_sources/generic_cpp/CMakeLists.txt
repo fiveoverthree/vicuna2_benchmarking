@@ -2,8 +2,6 @@
 # Add Generic C Programs to CTest
 #####
 
-# Add Toolchain File
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/CMake/gcc_toolchain.cmake")
 # Add test addition macros
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/add_test.cmake)
 

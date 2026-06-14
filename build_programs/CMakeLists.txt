@@ -99,7 +99,7 @@ endif()
 # Set build mode, Release by default
 ####
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RELEASE)
+  set(CMAKE_BUILD_TYPE DEBUG)
 endif()
 
 if(PRINT)
@@ -120,9 +120,29 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX .elf)
 set(CMAKE_EXECUTABLE_SUFFIX_ASM .elf) 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf") #For some reason setting this works for ASM files but SUFFIX_ASM doesnt
 
-#TODO: Need to check for valid compiler before setting the toolchain file
-set(CMAKE_TOOLCHAIN_FILE "/home/jpjones/Desktop/vicuna_muriscv_nn/vicuna2_benchmarking/benchmark_sources/MLPerfTiny/CMake/gcc_toolchain.cmake")
-#set(CMAKE_TOOLCHAIN_FILE "/home/parker/Desktop/vicuna2_generic_benchmarking/vicuna2_benchmarking/benchmark_sources/${BENCHMARK_SUITE}/CMake/gcc_toolchain.cmake") #This declaration must happen before the project is declared.  TODO: Current setup only allows one toolchain file to be selected.  Ideally this is done on a per benchmark folder basis.
+
+#######
+## Does GCC Multilib Build Exist? If not build it
+#######
+if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/multilib")
+    message("GCC Multilib not found. Building")
+    #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to init if not done already
+    if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
+        execute_process(COMMAND git submodule update --init toolchain/riscv-gnu-toolchain/
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+    endif()
+    execute_process(COMMAND make clean
+                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+    execute_process(COMMAND ./configure --prefix=${TOOLCHAIN_TOP}/GCC/multilib --with-arch=rv32im_zve32x --with-abi=ilp32 --enable-multilib   #Multilib build should include all valid configs for ANY benchmark for --with-arch
+                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+    execute_process(COMMAND make -j8 #Build crashes with -j${nproc}?
+                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+
+endif()
+# Select Toolchain File
+set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
+
+
 project(Vicuna2_Benchmarking_Environment LANGUAGES C CXX ASM DESCRIPTION "Vicuna2 Benchmarking Environment")
 include(CTest)
 

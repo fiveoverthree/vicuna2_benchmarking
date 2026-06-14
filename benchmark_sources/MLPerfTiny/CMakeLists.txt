@@ -1,27 +1,3 @@
-## This benchmark uses Multilib GCC.  Make sure it is built and present in the toolchain folder
-
-## Does GCC Multilib Build Exist? If not build it
-if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/multilib")
-    message("GCC Multilib not found. Building")
-    #Make GCC directory if it doesnt exist
-    if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC")
-        execute_process(COMMAND mkdir GCC
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    endif()
-    #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to init if not done already
-    if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
-        execute_process(COMMAND git submodule update --init toolchain/riscv-gnu-toolchain/
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    endif()
-    execute_process(COMMAND make clean
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-    execute_process(COMMAND ./configure --prefix=${TOOLCHAIN_TOP}/GCC/multilib --with-arch=rv32im_zve32x --with-abi=ilp32 --enable-multilib   #Multilib build should include all valid configs for ANY benchmark for --with-arch
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-    execute_process(COMMAND make -j8 #Build crashes with -j${nproc}?
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-
-endif()
-
 # Add test addition macros
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/add_test.cmake)
 

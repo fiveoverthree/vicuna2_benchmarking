@@ -4,7 +4,7 @@
 processor_models/verilator/build/*
 build_programs/build/*
 #Ignore built GCCs
-toolchain/GCC/*
+toolchain/GCC/multilib/*
 toolchain/spike/*
 
 #Simulator Specific Ignores
