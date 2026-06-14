@@ -236,16 +236,19 @@ macro(add_Benchmark_Spike TEST)
         ${FRAMEWORK_TOP}/
     )
 
+    set(EMB_SRCS "")
+    file(GLOB FILES "${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/*" )
+    foreach(item ${FILES})
+        if (NOT ${item} STREQUAL "${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/test_main.c")
+            set(EMB_SRCS ${EMB_SRCS} ${item})
+        endif()
+    endforeach()
+    
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
         ${FRAMEWORK_TOP}/spike/crt0.S
         ${EMBENCH_DSP_TOP}/benchmarks/${TEST}/benchmark.hpp   
-        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/test_main.h
-        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/coeff.c
-        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/data.h
-        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/in.c
-        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/out.c
-
+        ${EMB_SRCS}
     )
 
 #     #Set Linker
@@ -265,7 +268,7 @@ macro(add_Benchmark_Spike TEST)
               COMMAND ${TOOLCHAIN_TOP}/spike/bin/spike --isa=rv32imf_zicntr_zihpm_zfh_zve32f_zvfh_zvl${VREG_W}b ${BUILD_DIR}/benchmark_sources/embench_dsp/${TEST_NAME}.elf 
               WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 5) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
 
