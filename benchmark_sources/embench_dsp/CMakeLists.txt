@@ -80,9 +80,13 @@ target_include_directories(dsp-lib PUBLIC
 #Set location for build binaries
 set(BINARY_DIR ${BUILD_DIR}/benchmark_sources/embench_dsp/)
 
+file(GLOB folders "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/*" )
+foreach(item ${folders})
+    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/" "" bm ${item})
+    #add_Benchmark(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR})
+    #add_Benchmark_Gem5(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} gem5_caches)
+    #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_caches)
+    #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_only)
+    add_Benchmark_Spike(${bm})
+endforeach()
 
-#add_Benchmark(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR})
-#add_Benchmark_Gem5(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} gem5_caches)
-#add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_caches)
-#add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_only)
-add_Benchmark_Spike(biquad_cascade_df2T_f32_sos3_n1)

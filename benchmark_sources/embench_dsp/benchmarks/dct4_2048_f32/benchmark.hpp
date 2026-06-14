@@ -12,6 +12,7 @@ extern "C"
     #include "snr.h"
     #include "data.h"
     #include "dsp/filtering_functions.h"
+    #include "arm_common_tables.h"
 }
 
 class Benchmark
@@ -20,10 +21,10 @@ class Benchmark
     /*
     * Private Helper Functions and variables
     */
-    float32_t output[N_SAMPLES];
-    float32_t filter_state [2*N_STAGES];
-    arm_biquad_cascade_df2T_instance_f32 filter_S;
-    float32_t output_initial[N_INITIAL];
+    float32_t dct4_state[DCT4_SIZE*2];
+    float32_t * output;
+    arm_rfft_fast_instance_f32  rfft_S;
+    arm_dct4_instance_f32  dct4_S;
   
 
     public:
@@ -32,16 +33,22 @@ class Benchmark
     */
     //
     Benchmark(){
-        // filter initialization
-        arm_biquad_cascade_df2T_init_f32(&filter_S, N_STAGES, coeff, filter_state);
-        // ignore the noisy outputs due to initial conditions
-        arm_biquad_cascade_df2T_f32(&filter_S, input, output_initial, N_INITIAL);
+        //initialization
+        output = inout; //output pointer is the statically declared input pointer
+        arm_rfft_fast_init_2048_f32(&rfft_S);
+        dct4_S = {DCT4_SIZE, DCT4_SIZE/2, 
+                                   0.03125f,          // normalizing factor is sqrt(2/DCT4_SIZE)
+                                   Weights_2048,      // twiddle coefficients
+                                   cos_factors_2048,  // cosine factors
+                                   &rfft_S,           // real FFT instance (pre-initialized)
+                                   &(rfft_S.Sint),    // complex FFT instance (initialized by RFFT)
+                                   };
     };
 
     //Call code to be benchmarked
     inline int run_benchmark()
     {
-        arm_biquad_cascade_df2T_f32(&filter_S, input + N_INITIAL, output, N_SAMPLES);
+        arm_dct4_f32(&dct4_S, &dct4_state[0], &inout[0]);
         return 0; //cannot fail internally
 
     };
@@ -52,7 +59,7 @@ class Benchmark
         // calculate SNR of test output vs matlab reference output
         float32_t snr;
         uint32_t fail_count = 0;
-        snr = snr_f32(output_ref, output, N_SAMPLES);
+        snr = snr_f32(output_ref, inout, DCT4_SIZE);
 
         // check correctness (if reference and actual filter outputs matched)
         fail_count += (snr < SNR_REF_THLD);

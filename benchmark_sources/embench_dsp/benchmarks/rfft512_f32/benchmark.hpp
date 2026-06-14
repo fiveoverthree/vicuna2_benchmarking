@@ -20,10 +20,8 @@ class Benchmark
     /*
     * Private Helper Functions and variables
     */
-    float32_t output[N_SAMPLES];
-    float32_t filter_state [2*N_STAGES];
-    arm_biquad_cascade_df2T_instance_f32 filter_S;
-    float32_t output_initial[N_INITIAL];
+    float32_t output[FFT_SIZE];
+    arm_rfft_fast_instance_f32 arm_rfft_fast_S;
   
 
     public:
@@ -33,15 +31,13 @@ class Benchmark
     //
     Benchmark(){
         // filter initialization
-        arm_biquad_cascade_df2T_init_f32(&filter_S, N_STAGES, coeff, filter_state);
-        // ignore the noisy outputs due to initial conditions
-        arm_biquad_cascade_df2T_f32(&filter_S, input, output_initial, N_INITIAL);
+        arm_rfft_fast_init_512_f32(&arm_rfft_fast_S);
     };
 
     //Call code to be benchmarked
     inline int run_benchmark()
     {
-        arm_biquad_cascade_df2T_f32(&filter_S, input + N_INITIAL, output, N_SAMPLES);
+        arm_rfft_fast_f32(&arm_rfft_fast_S, input, output, IFFT_FLAG);
         return 0; //cannot fail internally
 
     };
@@ -52,8 +48,7 @@ class Benchmark
         // calculate SNR of test output vs matlab reference output
         float32_t snr;
         uint32_t fail_count = 0;
-        snr = snr_f32(output_ref, output, N_SAMPLES);
-
+        snr = snr_f32(output_ref, output, FFT_SIZE);
         // check correctness (if reference and actual filter outputs matched)
         fail_count += (snr < SNR_REF_THLD);
 

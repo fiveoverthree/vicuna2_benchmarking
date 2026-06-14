@@ -21,10 +21,9 @@ class Benchmark
     * Private Helper Functions and variables
     */
     float32_t output[N_SAMPLES];
-    float32_t filter_state [2*N_STAGES];
-    arm_biquad_cascade_df2T_instance_f32 filter_S;
-    float32_t output_initial[N_INITIAL];
-  
+    float32_t filter_state [N_TAPS + N_SAMPLES - 1];
+    arm_fir_instance_f32 filter_S;
+    float32_t output_initial[N_TAPS];
 
     public:
     /*
@@ -33,15 +32,17 @@ class Benchmark
     //
     Benchmark(){
         // filter initialization
-        arm_biquad_cascade_df2T_init_f32(&filter_S, N_STAGES, coeff, filter_state);
-        // ignore the noisy outputs due to initial conditions
-        arm_biquad_cascade_df2T_f32(&filter_S, input, output_initial, N_INITIAL);
+        arm_fir_init_f32(&filter_S, N_TAPS, coeff, filter_state, N_SAMPLES);        // ignore the noisy outputs due to initial conditions
+        for (uint32_t ptr = 0; ptr < (N_TAPS/N_SAMPLES); ptr++)
+        {
+            arm_fir_f32(&filter_S, input + (ptr * N_SAMPLES), output_initial + (ptr * N_SAMPLES), N_SAMPLES);
+        }    
     };
 
     //Call code to be benchmarked
     inline int run_benchmark()
     {
-        arm_biquad_cascade_df2T_f32(&filter_S, input + N_INITIAL, output, N_SAMPLES);
+        arm_fir_f32(&filter_S, (input + N_TAPS), output, N_SAMPLES);
         return 0; //cannot fail internally
 
     };
