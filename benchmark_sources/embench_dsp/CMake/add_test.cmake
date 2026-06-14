@@ -2,84 +2,90 @@
 # Macro for adding a tinyml benchmark to CTest
 #######
 
-# macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
+macro(add_Benchmark TEST)
 
-#     # Check if verilator model is built  TODO: Implement check to confirm params are the same?
-#     if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/verilated_model")
-#         message(FATAL_ERROR "Verilator Model executable not present!  Build it and try again.")
-#     endif()
+    # Check if verilator model is built  TODO: Implement check to confirm params are the same?
+    if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/verilated_model")
+        message(FATAL_ERROR "Verilator Model executable not present!  Build it and try again.")
+    endif()
 
-#     set(TEST_NAME ${TEST}_Verilator)
+    set(TEST_NAME ${TEST}_Verilator)
 
-#     add_executable(${TEST_NAME})
+    add_executable(${TEST_NAME})
 
-#     target_include_directories(${TEST_NAME} PRIVATE
-#         ${SOURCE_DIR}
-#         ${SOURCE_DIR}/model_data
-#         ${FRAMEWORK_TOP}/
-#     )
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}
+        ${EMBENCH_DSP_TOP}/embench-dsp/support/
+        ${EMBENCH_DSP_TOP}/benchmarks/${TEST}
+        ${DSP_LIB_PATH}/include
+        ${FRAMEWORK_TOP}/
+    )
 
-#     target_sources(${TEST_NAME} PUBLIC
-#         ${FRAMEWORK_TOP}/main.cpp  
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
-#     )
-#     #Set Linker
-#     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
-#     #target_link_options(${TEST_NAME} PRIVATE "-nostdlib")
-
-#     target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
-
-
-#     #Link BSP
-#     target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna tflm sim_Verilator)
-
-#     add_custom_command(TARGET ${TEST_NAME}
-#                        POST_BUILD
-#                        COMMAND ${CMAKE_OBJCOPY} -O binary ${TEST_NAME}.elf ${TEST_NAME}.bin
-#                        COMMAND srec_cat ${TEST_NAME}.bin -binary -offset 0x0000 -byte-swap 4 -o ${TEST_NAME}.vmem -vmem
-#                        COMMAND rm -f prog_${TEST_NAME}.txt
-#                        COMMAND echo -n "${TEST_BUILD_DIR}/${TEST_NAME}.vmem ${TEST_BUILD_DIR}/${TEST_NAME}_unused.txt " > prog_${TEST_NAME}.txt
-#                        COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vref_start | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
-#                        COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vref_end | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
-#                        COMMAND echo -n "${TEST_BUILD_DIR}/${TEST_NAME}_vicuna_sim_out.txt " >> prog_${TEST_NAME}.txt
-#                        COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vdata_start | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
-#                        COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vdata_end | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
-#                        COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
-#                        )
+    set(EMB_SRCS "")
+    file(GLOB FILES "${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/*" )
+    foreach(item ${FILES})
+        if (NOT ${item} STREQUAL "${EMBENCH_DSP_TOP}/embench-dsp/src/${TEST}/test_main.c")
+            set(EMB_SRCS ${EMB_SRCS} ${item})
+        endif()
+    endforeach()
     
-#     #VERY DANGEROUS TO USE TRACE
+    target_sources(${TEST_NAME} PUBLIC
+        ${FRAMEWORK_TOP}/main.cpp
+        ${FRAMEWORK_TOP}/spike/crt0.S
+        ${EMBENCH_DSP_TOP}/benchmarks/${TEST}/benchmark.hpp   
+        ${EMB_SRCS}
+    )
 
-#     set(INST_TRACE_ARGS "${TEST_BUILD_DIR}/inst_trace.txt")
+    #Set Linker
+    target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    #target_link_options(${TEST_NAME} PRIVATE "-nostdlib")
 
-#     if(TRACE)
-#         message("${TEST_BUILD_DIR}/last_test_sig.vcd")
-#         set(MEM_TRACE_ARGS "${TEST_BUILD_DIR}/last_test_mem.csv")
-#         set(VCD_TRACE_ARGS "${TEST_BUILD_DIR}last_test_sig.vcd")
+    target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
 
-#     else()
-#         set(MEM_TRACE_ARGS "")
-#         set(VCD_TRACE_ARGS "")
-#     endif()
+
+    #Link BSP
+    target_link_libraries(${TEST_NAME} PRIVATE dsp-lib bsp_Vicuna UART_Vicuna sim_Verilator)  
+
+    add_custom_command(TARGET ${TEST_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_OBJCOPY} -O binary ${TEST_NAME}.elf ${TEST_NAME}.bin
+                       COMMAND srec_cat ${TEST_NAME}.bin -binary -offset 0x0000 -byte-swap 4 -o ${TEST_NAME}.vmem -vmem
+                       COMMAND rm -f prog_${TEST_NAME}.txt
+                       COMMAND echo -n "${BUILD_DIR}/benchmark_sources/embench_dsp/${TEST_NAME}.vmem ${BUILD_DIR}/benchmark_sources/embench_dsp/${TEST_NAME}_unused.txt " > prog_${TEST_NAME}.txt
+                       COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vref_start | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
+                       COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vref_end | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
+                       COMMAND echo -n "${BUILD_DIR}/benchmark_sources/embench_dsp/${TEST_NAME}_vicuna_sim_out.txt " >> prog_${TEST_NAME}.txt
+                       COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vdata_start | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
+                       COMMAND readelf -s ${TEST_NAME}.elf | sed '2,13 s/ //1' | grep vdata_end | cut -d " " -f 6 | tr [=["\n"]=] " " >> prog_${TEST_NAME}.txt
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+                       )
+    
+    #VERY DANGEROUS TO USE TRACE
+
+    set(INST_TRACE_ARGS "${TEST_BUILD_DIR}/inst_trace.txt")
+
+    if(TRACE)
+        message("${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_sig.vcd")
+        set(MEM_TRACE_ARGS "${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_mem.csv")
+        set(VCD_TRACE_ARGS "${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_sig.vcd")
+
+    else()
+        set(MEM_TRACE_ARGS "")
+        set(VCD_TRACE_ARGS "")
+    endif()
                        
 	              
 
-#     #Add Test
-#     add_test(NAME ${TEST_NAME} 
-#              COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
-#              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
+    #Add Test
+    add_test(NAME ${TEST_NAME} 
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${BUILD_DIR}/benchmark_sources/embench_dsp/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-#     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT  1000) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT  1000) #TODO: Find a reasonable timeout for these tests
 
-#     message(STATUS "Successfully added ${TEST_NAME}")
+    message(STATUS "Successfully added ${TEST_NAME}")
 
-# endmacro()
+endmacro()
 
 # macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
 #     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
