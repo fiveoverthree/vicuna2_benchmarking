@@ -23,6 +23,7 @@
 [submodule "toolchain/verilator"]
 	path = toolchain/verilator
 	url = https://github.com/verilator/verilator.git
+	ignore = dirty
 [submodule "benchmark_sources/MLPerfTiny/tflm/tflite-micro"]
 	path = benchmark_sources/MLPerfTiny/tflm/tflite-micro
 	url = https://github.com/tensorflow/tflite-micro.git
