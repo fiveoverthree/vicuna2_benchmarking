@@ -3,18 +3,25 @@ message(STATUS "CMake Version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 
 
 ##########################
+# Required Variables at top level:
+#   BENCHMARK_SUITE - select the benchmark suite to compile/run
+#   COMPILER        - select the compiler to be used
 #
+# Each benchmark suite can declare their own specific variables
 #
 # FEATURES:
-# - TRACE : enables .csv memory trace and .vcd signal trace output for unit tests.  Due to large file sizes, only trace of last test run will be kept.  Will be located in /build/Testing
+# - TRACE : enables .csv memory trace and .vcd signal trace output for benchmarks.  Due to large file sizes, only trace of last test run will be kept.  Will be located in /build/Testing
 #
 #
 ##########################
 
-set(MEM_LATENCY 1 CACHE STRING "Memory latency")
+set(BENCHMARK_SUITE "NONE" CACHE STRING "Benchmark Suite to compile.  Name of the top level folder in /Benchmark_Sources")
+set(COMPILER "NONE" CACHE STRING "GCC or LLVM")
 
 option(TRACE        "Enable trace outputs"                                         OFF)
-option(PRINT        "Enable print statements"                                      OFF)
+
+set(MEM_LATENCY 1 CACHE STRING "Memory latency") #This should come from the vector config
+option(PRINT        "Enable print statements"                                      OFF) # Currently not used
 
 
 #####
@@ -137,15 +144,22 @@ endif()
 
 include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
 
+
 #######
-## Does GCC Multilib Build Exist? If not build it
+## Compiler Selection
 #######
-build_gcc_multilib()
+if(${COMPILER} STREQUAL "GCC")
+    #build gcc multilib
+    build_gcc_multilib()
+    # Select Toolchain File
+    set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
 
-# Select Toolchain File
-set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
+elseif(${COMPILER} STREQUAL "LLVM")
 
-
+    message(FATAL_ERROR "IN PROGRESS")
+else()
+    message(FATAL_ERROR "UNSUPPORTED COMPILER SELECTED.  Select a valid compiler with -DCOMPILER=GCC/LLVM.")
+endif()
 project(Vicuna2_Benchmarking_Environment LANGUAGES C CXX ASM DESCRIPTION "Vicuna2 Benchmarking Environment")
 include(CTest)
 
