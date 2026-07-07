@@ -1,6 +1,7 @@
 #######
-# Macro for adding a tinyml benchmark to CTest
+# Macros for adding a tinyml benchmark to CTest
 #######
+include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
 
 macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
 
@@ -83,30 +84,7 @@ endmacro()
 
 macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
-    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt" OR (REBUILD_GEM5 AND NOT REBUILT)) 
-        message("Gem5 executable not present!  Building it now.")
-        set(REBUILT ON)
-        # Make sure required dependencies are installed for gem5
-        if(DIST STREQUAL "Ubuntu")
-            message(STATUS "Downloading Ubuntu Dependencies")
-            execute_process(COMMAND sudo apt-get install build-essential scons python3-dev git pre-commit zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev libgoogle-perftools-dev libboost-all-dev  libhdf5-serial-dev python3-pydot python3-venv python3-tk mypy m4 libcapstone-dev libpng-dev libelf-dev pkg-config wget cmake doxygen clang-format
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        elseif(DIST STREQUAL "Fedora")
-            message(WARNING "Downloading Fedora Dependencies - WARNING THIS IS UNTESTED")
-            execute_process(COMMAND sudo yum install build-essential scons python3-dev git pre-commit zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev libgoogle-perftools-dev libboost-all-dev  libhdf5-serial-dev python3-pydot python3-venv python3-tk mypy m4 libcapstone-dev libpng-dev libelf-dev pkg-config wget cmake doxygen clang-format
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        else()
-            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR gem5")
-        endif()
-
-        # Make sure verilator C files have been built
-        if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
-            message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
-        endif()
-        #${nproc} not parsing correctly?
-        execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
-                            WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
-    endif()
+    build_gem5()
 
     set(TEST_NAME ${TEST}_Gem5_${CONFIG_SCRIPT})
 
@@ -151,31 +129,7 @@ endmacro()
 
 macro(add_Benchmark_Hybrid TEST SOURCE_DIR TEST_BUILD_DIR CONFIG_SCRIPT)
     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild
-    if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt"  OR (REBUILD_GEM5 AND NOT REBUILT))
-        message("gem5 executable not present!  Building it now.")
-        set(REBUILT ON)
-
-        # Make sure required dependencies are installed for gem5
-        if(DIST STREQUAL "Ubuntu")
-            message(STATUS "Downloading Ubuntu Dependencies")
-            execute_process(COMMAND sudo apt-get install build-essential scons python3-dev git pre-commit zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev libgoogle-perftools-dev libboost-all-dev  libhdf5-serial-dev python3-pydot python3-venv python3-tk mypy m4 libcapstone-dev libpng-dev libelf-dev pkg-config wget cmake doxygen clang-format
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        elseif(DIST STREQUAL "Fedora")
-            message(WARNING "Downloading Fedora Dependencies - WARNING THIS IS UNTESTED")
-            execute_process(COMMAND sudo yum install build-essential scons python3-dev git pre-commit zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev libgoogle-perftools-dev libboost-all-dev  libhdf5-serial-dev python3-pydot python3-venv python3-tk mypy m4 libcapstone-dev libpng-dev libelf-dev pkg-config wget cmake doxygen clang-format
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        else()
-            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR gem5")
-        endif()
-
-        # Make sure verilator C files have been built
-        if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
-            message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
-        endif()
-        #${nproc} not parsing correctly?
-        execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
-                            WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
-    endif()
+    build_gem5()
 
     set(TEST_NAME ${TEST}_Hybrid_${CONFIG_SCRIPT})
 
@@ -239,31 +193,7 @@ endmacro()
 
 macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
     #Build spike if it isnt present
-    if(NOT EXISTS "${TOOLCHAIN_TOP}/spike/bin/spike")
-        message("Spike Executable not present, building")
-
-        # Make sure required dependencies are installed for Spike
-        if(DIST STREQUAL "Ubuntu")
-            message(STATUS "Downloading Ubuntu Dependencies")
-            execute_process(COMMAND sudo apt-get install device-tree-compiler libboost-regex-dev libboost-system-dev
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        elseif(DIST STREQUAL "Fedora")
-            message(STATUS "Downloading Fedora Dependencies")
-            execute_process(COMMAND sudo yum install device-tree-compiler libboost-regex-dev libboost-system-dev
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        else()
-            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR SPIKE")
-        endif()
-
-        execute_process(COMMAND mkdir build 
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim)
-        execute_process(COMMAND ../configure --prefix=${TOOLCHAIN_TOP}/spike
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-        execute_process(COMMAND make -j8
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-        execute_process(COMMAND make install
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-    endif()
+    build_spike()
 
     set(TEST_NAME ${TEST}_Spike)
     

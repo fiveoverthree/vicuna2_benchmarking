@@ -45,31 +45,10 @@ endif()
 #####################
 # Check if verilator has been built and include tool.   If not, build it
 ####################
+set(TOOLCHAIN_TOP ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain) #Top level path to toolchain folder
+include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
 
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/bin/verilator_bin")
-    message("Verilator binary not found in '/toolchain/verilator', building from Verilator submodule")
-
-    # Make sure required dependencies are installed for Verilator
-    if(DIST STREQUAL "Ubuntu")
-        message(STATUS "Downloading Ubuntu Dependencies")
-        execute_process(COMMAND sudo apt-get install help2man perl python3 make autoconf flex bison
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    elseif(DIST STREQUAL "Fedora")
-        message(STATUS "Downloading Fedora Dependencies")
-        execute_process(COMMAND sudo yum install help2man perl python3 make autoconf flex bison
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    else()
-        message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR VERILATOR")
-    endif()
-
-    execute_process(COMMAND autoconf
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/)
-    execute_process(COMMAND ./configure --prefix ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/)
-    execute_process(COMMAND make -j${nproc}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/)
-
-endif()
+build_verilator()
 
 find_package(verilator HINTS ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator)
 

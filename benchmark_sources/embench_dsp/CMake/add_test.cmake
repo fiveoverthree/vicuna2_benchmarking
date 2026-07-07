@@ -1,7 +1,7 @@
 #######
 # Macro for adding a tinyml benchmark to CTest
 #######
-
+include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
 macro(add_Benchmark TEST)
 
     # Check if verilator model is built  TODO: Implement check to confirm params are the same?
@@ -218,30 +218,7 @@ endmacro()
 
 macro(add_Benchmark_Spike TEST)
     #Build spike if it isnt present
-    if(NOT EXISTS "${TOOLCHAIN_TOP}/spike/bin/spike")
-        message("Spike Executable not present, building")
-        # Make sure required dependencies are installed for Spike
-        if(DIST STREQUAL "Ubuntu")
-            message(STATUS "Downloading Ubuntu Dependencies")
-            execute_process(COMMAND sudo apt-get install device-tree-compiler libboost-regex-dev libboost-system-dev
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        elseif(DIST STREQUAL "Fedora")
-            message(STATUS "Downloading Fedora Dependencies")
-            execute_process(COMMAND sudo yum install device-tree-compiler libboost-regex-dev libboost-system-dev
-                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-        else()
-            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR SPIKE")
-        endif()
-
-        execute_process(COMMAND mkdir build 
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim)
-        execute_process(COMMAND ../configure --prefix=${TOOLCHAIN_TOP}/spike
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-        execute_process(COMMAND make -j8
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-        execute_process(COMMAND make install
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-isa-sim/build)
-    endif()
+    build_spike()
 
     set(TEST_NAME ${TEST}_Spike)
     

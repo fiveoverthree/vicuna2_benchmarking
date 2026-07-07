@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 message(STATUS "CMake Version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 
+
 ##########################
 #
 #
@@ -134,37 +135,13 @@ else()
     message(WARNING "Found untested distribution. You might need to install submodule dependencies separately.")
 endif()
 
+include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
+
 #######
 ## Does GCC Multilib Build Exist? If not build it
 #######
-if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/multilib")
-    message("GCC Multilib not found. Building")
-    # Make sure required dependencies are installed for GCC
-    if(DIST STREQUAL "Ubuntu")
-        message(STATUS "Downloading Ubuntu Dependencies")
-        execute_process(COMMAND sudo apt-get install autoconf automake autotools-dev curl python3 python3-pip python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build git cmake libglib2.0-dev libslirp-dev libncurses-dev
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    elseif(DIST STREQUAL "Fedora")
-        message(STATUS "Downloading Fedora Dependencies")
-        execute_process(COMMAND sudo yum install autoconf automake python3 libmpc-devel mpfr-devel gmp-devel gawk  bison flex texinfo patchutils gcc gcc-c++ zlib-devel expat-devel libslirp-devel ncurses-devel
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    else()
-        message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR GCC")
-    endif()
+build_gcc_multilib()
 
-    #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to checkout if not done already
-    if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
-        execute_process(COMMAND git submodule update --checkout riscv-gnu-toolchain/
-                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
-    endif()
-    execute_process(COMMAND make clean
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-    execute_process(COMMAND ./configure --prefix=${TOOLCHAIN_TOP}/GCC/multilib --with-arch=rv32im_zve32x --with-abi=ilp32 --enable-multilib   #Multilib build should include all valid configs for ANY benchmark for --with-arch
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-    execute_process(COMMAND make -j8 #Build crashes with -j${nproc}?
-                    WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
-
-endif()
 # Select Toolchain File
 set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
 
