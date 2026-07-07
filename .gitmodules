@@ -16,6 +16,7 @@
 	path = toolchain/riscv-gnu-toolchain
 	url = https://github.com/riscv-collab/riscv-gnu-toolchain.git
 	active = false
+	update = none
 [submodule "processor_models/gem5/gem5"]
 	path = processor_models/gem5/gem5
 	url = https://github.com/gem5/gem5.git

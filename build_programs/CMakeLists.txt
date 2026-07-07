@@ -126,9 +126,9 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf") #For some reason setting this works for ASM 
 #######
 if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/multilib")
     message("GCC Multilib not found. Building")
-    #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to init if not done already
+    #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to checkout if not done already
     if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
-        execute_process(COMMAND git submodule update --init toolchain/riscv-gnu-toolchain/
+        execute_process(COMMAND git submodule update --checkout toolchain/riscv-gnu-toolchain/
                         WORKING_DIRECTORY ${TOOLCHAIN_TOP})
     endif()
     execute_process(COMMAND make clean
