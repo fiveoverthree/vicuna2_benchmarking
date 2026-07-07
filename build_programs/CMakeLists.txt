@@ -111,21 +111,47 @@ set(CMAKE_SYSTEM_PROCESSOR ${RISCV_ARCH})
 # The Generic system name is used for bare-metal targets (without OS) in CMake
 set(CMAKE_SYSTEM_NAME Generic)
 
-# #####################
-# # Setup the CMake Project
-# ####################
+######################
+## Setup the CMake Project
+#####################
 
 set(CMAKE_EXECUTABLE_SUFFIX_C .elf)
 set(CMAKE_EXECUTABLE_SUFFIX_CXX .elf)
 set(CMAKE_EXECUTABLE_SUFFIX_ASM .elf) 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf") #For some reason setting this works for ASM files but SUFFIX_ASM doesnt
 
+######################
+# Get current OS distribution for dependency downloads
+######################
+file(READ "/etc/os-release" OS_REL)
+string(REGEX MATCH "Fedora|Ubuntu" DIST ${OS_REL})
+
+if(DIST STREQUAL "Ubuntu")
+    message(STATUS "Found Ubuntu")
+elseif(DIST STREQUAL "Fedora")
+    message(STATUS "Found Fedora")
+else()
+    message(WARNING "Found untested distribution. You might need to install submodule dependencies separately.")
+endif()
 
 #######
 ## Does GCC Multilib Build Exist? If not build it
 #######
 if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/multilib")
     message("GCC Multilib not found. Building")
+    # Make sure required dependencies are installed for GCC
+    if(DIST STREQUAL "Ubuntu")
+        message(STATUS "Downloading Ubuntu Dependencies")
+        execute_process(COMMAND sudo apt-get install autoconf automake autotools-dev curl python3 python3-pip python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build git cmake libglib2.0-dev libslirp-dev libncurses-dev
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+    elseif(DIST STREQUAL "Fedora")
+        message(STATUS "Downloading Fedora Dependencies")
+        execute_process(COMMAND sudo yum install autoconf automake python3 libmpc-devel mpfr-devel gmp-devel gawk  bison flex texinfo patchutils gcc gcc-c++ zlib-devel expat-devel libslirp-devel ncurses-devel
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+    else()
+        message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR GCC")
+    endif()
+
     #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to checkout if not done already
     if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
         execute_process(COMMAND git submodule update --checkout riscv-gnu-toolchain/

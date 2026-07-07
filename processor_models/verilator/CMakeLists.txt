@@ -28,12 +28,40 @@ set(CMAKE_CXX_STANDARD 14)
 option(TRACE "Enable minimal VCD trace outputs" OFF)
 option(TRACE_FULL "Enable FULL VCD trace outputs" OFF) #TODO: prevent this option from being cached, force user to always manually enable it
 
+######################
+# Get current OS distribution for dependency downloads
+######################
+file(READ "/etc/os-release" OS_REL)
+string(REGEX MATCH "Fedora|Ubuntu" DIST ${OS_REL})
+
+if(DIST STREQUAL "Ubuntu")
+    message(STATUS "Found Ubuntu")
+elseif(DIST STREQUAL "Fedora")
+    message(STATUS "Found Fedora")
+else()
+    message(WARNING "Found untested distribution. You might need to install submodule dependencies separately.")
+endif()
+
 #####################
 # Check if verilator has been built and include tool.   If not, build it
 ####################
 
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/bin/verilator_bin")
     message("Verilator binary not found in '/toolchain/verilator', building from Verilator submodule")
+
+    # Make sure required dependencies are installed for Verilator
+    if(DIST STREQUAL "Ubuntu")
+        message(STATUS "Downloading Ubuntu Dependencies")
+        execute_process(COMMAND sudo apt-get install help2man perl python3 make autoconf flex bison
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+    elseif(DIST STREQUAL "Fedora")
+        message(STATUS "Downloading Fedora Dependencies")
+        execute_process(COMMAND sudo yum install help2man perl python3 make autoconf flex bison
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+    else()
+        message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR VERILATOR")
+    endif()
+
     execute_process(COMMAND autoconf
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/)
     execute_process(COMMAND ./configure --prefix ${CMAKE_CURRENT_SOURCE_DIR}/../../toolchain/verilator/
