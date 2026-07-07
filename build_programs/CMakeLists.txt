@@ -155,8 +155,8 @@ if(${COMPILER} STREQUAL "GCC")
     set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
 
 elseif(${COMPILER} STREQUAL "LLVM")
-
-    message(FATAL_ERROR "IN PROGRESS")
+    build_llvm()
+    set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/llvm/llvm_toolchain.cmake")
 else()
     message(FATAL_ERROR "UNSUPPORTED COMPILER SELECTED.  Select a valid compiler with -DCOMPILER=GCC/LLVM.")
 endif()

@@ -32,6 +32,77 @@ macro(build_gcc_multilib)
     endif()
 endmacro()
 
+macro(build_gcc_header_only ARCH)
+
+     if(NOT EXISTS "${TOOLCHAIN_TOP}/GCC/${ARCH}")
+        message("GCC Headers for ${ARCH} not found. Building")
+        # Make sure required dependencies are installed for GCC
+        if(DIST STREQUAL "Ubuntu")
+            message(STATUS "Downloading Ubuntu Dependencies")
+            execute_process(COMMAND sudo apt-get install autoconf automake autotools-dev curl python3 python3-pip python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build git cmake libglib2.0-dev libslirp-dev libncurses-dev
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        elseif(DIST STREQUAL "Fedora")
+            message(STATUS "Downloading Fedora Dependencies")
+            execute_process(COMMAND sudo yum install autoconf automake python3 libmpc-devel mpfr-devel gmp-devel gawk  bison flex texinfo patchutils gcc gcc-c++ zlib-devel expat-devel libslirp-devel ncurses-devel
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        else()
+            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR GCC")
+        endif()
+
+        #riscv-gnu-toolchain submodule is not downloaded with --recursive flag.  Need to checkout if not done already
+        if(NOT EXISTS "${TOOLCHAIN_TOP}/riscv-gnu-toolchain/gcc")
+            execute_process(COMMAND git submodule update --checkout riscv-gnu-toolchain/
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        endif()
+        execute_process(COMMAND make clean
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+        execute_process(COMMAND ./configure --prefix=${TOOLCHAIN_TOP}/GCC/${ARCH} --with-arch=${ARCH} --with-abi=ilp32 --disable-multilib   #LLVM needs headers (non-multilib) for each specific architecture
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+        execute_process(COMMAND make -j30 #Build crashes with -j${nproc}?
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/riscv-gnu-toolchain/)
+
+    else()
+        message(STATUS "GCC Header Build found in ${TOOLCHAIN_TOP}/GCC/${ARCH}")
+    endif()
+
+endmacro()
+
+macro(build_llvm)
+    build_gcc_header_only(rv32im_zve32x)
+    if(NOT EXISTS "${TOOLCHAIN_TOP}/llvm/llvm_22_1_8")
+
+        if(DIST STREQUAL "Ubuntu") #TODO: Find these dependencies
+            message(STATUS "Downloading Ubuntu Dependencies")
+            execute_process(COMMAND sudo apt-get install 
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        elseif(DIST STREQUAL "Fedora")
+            message(STATUS "Downloading Fedora Dependencies")
+            execute_process(COMMAND sudo yum install 
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        else()
+            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR LLVM")
+        endif()
+
+        if(NOT EXISTS "${TOOLCHAIN_TOP}/llvm-project/clang")
+            execute_process(COMMAND git submodule update --checkout llvm-project/
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        endif()
+
+        message(FATAL_ERROR "#####################################################################################################################\n ERROR : LLVM NOT BUILT \n Run the following two commands in the ${TOOLCHAIN_TOP}/llvm-project/ folder \n\n cmake -S llvm -B build -G Ninja -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_TOP}/llvm/llvm_22_1_8 -DCMAKE_C_COMPILER=clang  -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=\"RISCV\" -DLLVM_ENABLE_PROJECTS=\"clang;lld\"  -DLLVM_DEFAULT_TARGET_TRIPLE=\"riscv32-unknown-linux-gnu\" -DLLVM_INSTALL_TOOLCHAIN_ONLY=On \n\n ninja -C build install \n\n#####################################################################################################################\n")
+        # CANNOT CALL cmake project from within cmake project  TODO: resolve this
+        # execute_process(COMMAND  cmake -S llvm -B build -G Ninja -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_TOP}/llvm/llvm_22_1_8 -DCMAKE_C_COMPILER=clang  -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="RISCV" -DLLVM_ENABLE_PROJECTS="clang;lld"  -DLLVM_DEFAULT_TARGET_TRIPLE="riscv32-unknown-linux-gnu" -DLLVM_INSTALL_TOOLCHAIN_ONLY=On
+        #                 WORKING_DIRECTORY ${TOOLCHAIN_TOP}/llvm-project/)
+        # execute_process(COMMAND  ninja -C build install
+        #                 WORKING_DIRECTORY ${TOOLCHAIN_TOP}/llvm-project/)
+
+
+
+    else()
+        message(STATUS "LLVM found in ${TOOLCHAIN_TOP}/llvm")
+    endif()
+
+endmacro()
+
 macro(build_spike)
     if(NOT EXISTS "${TOOLCHAIN_TOP}/spike/bin/spike")
         message("Spike Executable not present, building")

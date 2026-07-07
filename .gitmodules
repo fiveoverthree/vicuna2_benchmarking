@@ -39,3 +39,8 @@
 [submodule "benchmark_sources/embench_dsp/embench-dsp"]
 	path = benchmark_sources/embench_dsp/embench-dsp
 	url = https://github.com/embench/embench-dsp.git
+[submodule "toolchain/llvm-project"]
+	path = toolchain/llvm-project
+	url = https://github.com/llvm/llvm-project.git
+	active = false
+	update = none
