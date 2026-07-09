@@ -31,14 +31,10 @@ class Simulator
     };
 
     //Termination success or failure function for this simulator
-    int terminate(int valid)
+    int terminate(int code)
     {
-        // if (valid)
-        // {
-        //     *terminate_addr = 0x0; //Write 0x0 to signal success
-        // } else {
-        //     *terminate_addr = 0xF; //Write 0xF to signal success
-        // }
+        //pass return code, gem5 uses return code of main() to signal success/failure
+        return code; 
     };
 
     //Cleanup any allocatations

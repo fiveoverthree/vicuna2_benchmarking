@@ -184,6 +184,7 @@ macro(build_gem5) #TODO: Move gem5 submodule to toolchain directory
             message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
         endif()
         #${nproc} not parsing correctly?
+        #In case of error "error while loading shared libraries libpython3.13.so.1.0: no such file or directory", add path to python install /lib folder to $LD_LIBRARY_PATH environment variable
         execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
                             WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
     endif()
