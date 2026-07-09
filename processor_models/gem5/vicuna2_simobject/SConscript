@@ -46,29 +46,36 @@ Source('wrapper_core.cc')
 ## Relevant Paths
 model_path = os.path.abspath(os.getcwd()+"/../../../../../verilator/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir") #TODO: Find a way to pass these variables in from Cmake higher level to not be relative coded
 verilator_path = os.path.abspath(os.getcwd()+"/../../../../../../toolchain/verilator/include")
+lib_path = os.path.abspath(os.getcwd()+"/../../../../../verilator/build/")
 
-## Include Verilator Sources
-Source(verilator_path+"/verilated.cpp")
-Source(verilator_path+"/verilated_vcd_c.cpp")
-Source(verilator_path+"/verilated_threads.cpp")
+# ## Include Verilator Sources
+# Source(verilator_path+"/verilated.cpp")
+# Source(verilator_path+"/verilated_vcd_c.cpp")
+# Source(verilator_path+"/verilated_threads.cpp")
 ##Other souces might be needed?
 
 ## Include Model Sources
-print("################")
-print("Model Path:")
-print(model_path)
-print(glob.glob(os.path.abspath(model_path+"/*.cpp")))
-for file in glob.glob(os.path.abspath(model_path+"/*.cpp")):
-    Source(file)
-    print(file)
+# print("################")
+# print("Model Path:")
+# print(model_path)
+# print(glob.glob(os.path.abspath(model_path+"/*.cpp")))
+# for file in glob.glob(os.path.abspath(model_path+"/*.cpp")):
+#     Source(file)
+#     print(file)
 
 ## Add Include Paths
 print("################")
+print(lib_path)
 verilator_path_gtk = verilator_path + "/gtkwave/"
 verilator_path_vlt = verilator_path + "/vltstd/"
 
 env.Append(CPPPATH=[verilator_path_gtk, verilator_path_vlt, verilator_path, model_path])
 env.Append(CPPDEFINES=["VM_SC=0", "VM_TRACE=1", "VL_THREADED=0"])
+
+env.Append(LIBS=['libverilated_model_lib'])
+env.Append(LIBPATH=[lib_path])
+env.Append(RPATH=[lib_path])
+
 
 # Flags
 DebugFlag('rtlObject')
