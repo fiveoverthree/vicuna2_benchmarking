@@ -33,8 +33,9 @@ macro(add_Benchmark TEST SOURCE_DIR TEST_BUILD_DIR)
     )
     #Set Linker
     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
-    #target_link_options(${TEST_NAME} PRIVATE "-nostdlib")
-
+    if (${COMPILER} STREQUAL "LLVM")
+        target_compile_options(${TEST_NAME} PRIVATE "-fno-use-cxa-atexit")  #-fno-use-cxa-atexit needed for hidden symbol `__dso_handle' error for llvm
+    endif()
     target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
 
 
@@ -222,6 +223,9 @@ macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
 
     target_link_options(${TEST_NAME} PRIVATE "-T${FRAMEWORK_TOP}/spike/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
+    if (${COMPILER} STREQUAL "LLVM")
+        target_compile_options(${TEST_NAME} PRIVATE "-fno-use-cxa-atexit")  #-fno-use-cxa-atexit needed for hidden symbol `__dso_handle' error for llvm
+    endif()
     #Link tflm and spike sim libraries
     target_link_libraries(${TEST_NAME} PRIVATE tflm sim_spike)   
 
