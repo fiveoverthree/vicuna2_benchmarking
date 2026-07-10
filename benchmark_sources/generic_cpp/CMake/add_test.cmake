@@ -60,7 +60,7 @@ macro(add_benchmark_Verilator TEST TEST_NUM)
 endmacro()
 
 macro(add_benchmark_Gem5 TEST TEST_NUM CONFIG_SCRIPT)
-    #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
+    #Check if Gem5 simulator has been built.  If not build it.
     build_gem5()
 
     set(TEST_NAME ${TEST}_${TEST_NUM}_Gem5_${CONFIG_SCRIPT})
@@ -86,4 +86,49 @@ macro(add_benchmark_Gem5 TEST TEST_NUM CONFIG_SCRIPT)
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
+endmacro()
+
+macro(add_benchmark_Hybrid TEST TEST_NUM CONFIG_SCRIPT)
+    #Check if Gem5 simulator has been built.  If not build it.
+    build_gem5()
+
+    set(TEST_NAME ${TEST}_${TEST_NUM}_Hybrid_${CONFIG_SCRIPT})
+
+    add_executable(${TEST_NAME})
+
+    generic_cpp_sources(${TEST_NAME} ${TEST} ${TEST_NUM})
+    #Set Linker
+    target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    #target_link_options(${TEST_NAME} PRIVATE "-nostdlib")
+
+    target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
+
+    #Link BSP
+    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna sim_hybrid)
+
+    add_custom_command(TARGET ${TEST_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+                       )
+
+    #Hybrid Sim allows trace outputs, should be able to enable it here
+    # set(INST_TRACE_ARGS "${BUILD_DIR}/Testing/inst_trace.txt")
+
+    # if(TRACE)
+    #     set(MEM_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_mem.csv")
+    #     set(VCD_TRACE_ARGS "${BUILD_DIR}/Testing/last_test_sig.vcd")
+
+    # else()
+    #     set(MEM_TRACE_ARGS "")
+    #     set(VCD_TRACE_ARGS "")
+    # endif()
+  #Add Test
+        add_test(NAME ${TEST_NAME} 
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${TEST_BUILD_DIR}/${TEST_NAME}.elf
+             WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 10) #TODO: Find a reasonable timeout for these tests
+
+    message(STATUS "Successfully added ${TEST_NAME}")
+
 endmacro()
