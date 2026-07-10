@@ -91,26 +91,32 @@ endmacro()
 macro(add_benchmark_etiss TEST TEST_NUM)
     # TODO: check if ETISS is built
     set(TEST_NAME ${TEST}_${TEST_NUM}_etiss)
+    set(ETISS_CRT_LIB ${CMAKE_BINARY_DIR}/benchmark_sources/framework/etiss)
 
     add_executable(${TEST_NAME})
     generic_cpp_sources(${TEST_NAME} ${TEST} ${TEST_NUM})
 
     add_dependencies(${TEST_NAME} etiss_crt0)
     target_link_libraries(${TEST_NAME} PRIVATE etiss_crt0 sim_etiss)
-
+    
     add_custom_command(TARGET ${TEST_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+    POST_BUILD
+    COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
     )
-
+    
     if(CMAKE_CXX_COMPILER_ID MATCHES "(C|c?)lang")
         set(ETISS_LDFLAGS "-nostdlib -lc -lsemihost -lgcc -lstdc++ -L${ETISS_CRT_TOP} -T ${ETISS_CRT_TOP}/etiss.ld")
     else()
-        set(ETISS_LDFLAGS "-L${ETISS_CRT_TOP} --specs=${ETISS_CRT_TOP}/etiss-semihost.specs -T ${ETISS_CRT_TOP}/etiss.ld")
+        target_link_options(${TEST_NAME} PRIVATE 
+            "-L${ETISS_CRT_LIB}"
+            "--specs=${ETISS_CRT_TOP}/etiss-semihost.specs"
+            "-T${ETISS_CRT_TOP}/etiss.ld"
+        )
+        # set(ETISS_LDFLAGS "-L${ETISS_CRT_TOP} --specs=${ETISS_CRT_TOP}/etiss-semihost.specs -T${ETISS_CRT_TOP}/etiss.ld")
     endif()
-
+    
     # Set Linker
-    target_link_options(${TEST_NAME} PRIVATE "${ETISS_LDFLAGS}")
-
+    # target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    # target_link_options(${TEST_NAME} PRIVATE "${ETISS_LDFLAGS}")
     # TODO: ctest
 endmacro()

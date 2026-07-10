@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdio>
+
 class Simulator
 {
     private:
@@ -25,7 +27,7 @@ class Simulator
     //Termination success or failure function for this simulator
     void terminate(int code) // TODO: Int return codes
     {
-
+        std::printf("Bye!\n");
     };
 
     //Cleanup any allocatations
