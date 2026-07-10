@@ -2,7 +2,7 @@
 #define SIMULATOR_HPP 
 
 #include <cstdint>
-
+#include <gem5/m5ops.h>
 
 #include <cstdint>
 class Simulator
@@ -33,7 +33,11 @@ class Simulator
     //Termination success or failure function for this simulator
     int terminate(int code)
     {
-        //pass return code, gem5 uses return code of main() to signal success/failure
+        if (code)
+        {
+            m5_fail(0, code); //TODO: ctest reports "test passed", but output says "fail instruction encountered"
+        }
+        m5_exit(0); //exit normally
         return code; 
     };
 
