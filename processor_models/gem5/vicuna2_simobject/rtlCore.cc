@@ -279,7 +279,7 @@ rtlCore::tick() {
                 if (tracing){
                     core->enableTracing(); //todo: disable tracing
                 }
-                printf("Cycles: %d\n", cyclesStat);
+                //printf("Cycles: %d\n", cyclesStat);
             }
             else if(curReq->getAddr() == 0x408)
             {
@@ -373,7 +373,8 @@ rtlCore::tick() {
                 {
                     warn("Interrupt ADDRESS 70 REACHED ######");
                     core->disableTracing();
-                    exitSimLoop("EXIT AT INTERRUPT ADDR", -1, when, 0, true);
+                    Tick when = curTick();
+                    exitSimLoop("EXIT AT INTERRUPT VECTOR TABLE ACCESS", -1, when, 0, true);
                 }
             } else {
                 //warn("Failed I Transmission ######");
