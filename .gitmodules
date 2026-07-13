@@ -44,3 +44,15 @@
 	url = https://github.com/llvm/llvm-project.git
 	active = false
 	update = none
+[submodule "toolchain/etiss_base/etiss"]
+	path = toolchain/etiss_base/etiss
+	url = git@github.com:danielschloms/etiss.git
+[submodule "toolchain/etiss_base/M2-ISA-R"]
+	path = toolchain/etiss_base/M2-ISA-R
+	url = git@github.com:tum-ei-eda/M2-ISA-R.git
+[submodule "toolchain/etiss_base/etiss_arch_riscv"]
+	path = toolchain/etiss_base/etiss_arch_riscv
+	url = git@github.com:danielschloms/etiss_arch_riscv.git
+[submodule "toolchain/etiss_base/etiss_rvv"]
+	path = toolchain/etiss_base/etiss_rvv
+	url = git@github.com:danielschloms/etiss.git
