@@ -130,6 +130,7 @@ macro(add_benchmark_Hybrid TEST TEST_NUM CONFIG_SCRIPT)
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 10) #TODO: Find a reasonable timeout for these tests
 
     message(STATUS "Successfully added ${TEST_NAME}")
+endmacro()
 
 macro(add_benchmark_etiss TEST TEST_NUM)
     # TODO: check if ETISS is built
