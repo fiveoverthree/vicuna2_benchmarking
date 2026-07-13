@@ -32,6 +32,8 @@
 
 //#include "params/rtlObjectParams.hh"
 #include "params/rtlCore.hh"
+#include "sim/sim_events.hh"
+#include "sim/sim_exit.hh"
 namespace gem5
 {
 ////////////////////
@@ -321,9 +323,8 @@ rtlCore::tick() {
         if (cyclesStalled >= 10000){
             warn("Stalled for 10000 cycles at addr %X : %d cycles\n", prevMemAddr, cyclesStat);
             core->disableTracing();
-            while(true){ //Todo: terminate
-               
-            }
+            Tick when = curTick();
+            exitSimLoop("LOOP Encountered", -1, when, 0, true);
         }
     } else {
         cyclesStalled = 0;
@@ -372,8 +373,7 @@ rtlCore::tick() {
                 {
                     warn("Interrupt ADDRESS 70 REACHED ######");
                     core->disableTracing();
-                    while(true){
-                    }
+                    exitSimLoop("EXIT AT INTERRUPT ADDR", -1, when, 0, true);
                 }
             } else {
                 //warn("Failed I Transmission ######");
