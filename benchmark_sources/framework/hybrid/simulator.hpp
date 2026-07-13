@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "uart.hpp"
+#include <gem5/m5ops.h>
 
 
 #include <cstdint>
@@ -42,11 +43,14 @@ class Simulator
         if (valid)
         {
             *terminate_addr = 0x0; //Write 0x0 to signal success
-            while(true);//TODO: Use gem5 termination
         } else {
             *terminate_addr = 0xF; //Write 0xF to signal success
-            while(true);//TODO: Use gem5 termination
         }
+        if (!valid)
+        {
+            m5_fail(0, valid); //TODO: ctest reports "test passed", but output says "fail instruction encountered"
+        }
+        m5_exit(0); //exit normally
     };
 
     //Cleanup any allocatations

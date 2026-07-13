@@ -44,9 +44,14 @@ add_library(sim_hybrid INTERFACE)
 
 target_include_directories(sim_hybrid INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/hybrid
+  ${GEM5_MODEL_DIR}/gem5/include
+)
+target_link_libraries(sim_hybrid INTERFACE
+  m5
 )
 
-#Add library for hybrid simulation specific implementations
+
+#Add library for spike simulation specific implementations
 add_library(sim_spike INTERFACE)
 
 target_include_directories(sim_spike INTERFACE
