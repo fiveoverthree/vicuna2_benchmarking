@@ -57,18 +57,16 @@ class Benchmark{
         }
 
         Simulator simulator;
-        //for (size_t i = 0; i < aww_int8_data_sample_cnt; i++)
-        for (size_t i = 0; i < 1; i++)
+        simulator.begin_measurement();
+        for (size_t i = 0; i < aww_int8_data_sample_cnt; i++)
         {
             memcpy(interpreter.input(0)->data.int8, (int8_t *)aww_int8_input_data[i], aww_int8_input_data_len[i]);
-            simulator.begin_measurement();
 
             if (interpreter.Invoke() != kTfLiteOk)
             {
                 TF_LITE_REPORT_ERROR(error_reporter, "ERROR: In Invoke().");
                 return -1;
             }
-            simulator.end_measurement();
             
 
             int8_t top_index = 0;
@@ -91,6 +89,7 @@ class Benchmark{
                 //uart_printf("Sample #%d pass, top_index %d matches ref %d \n", i, top_index, aww_int8_output_data_ref[i]);
             }
         }
+        simulator.end_measurement();
         simulator.terminate(0);
         return 0;
     }
