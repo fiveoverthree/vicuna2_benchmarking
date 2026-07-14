@@ -113,6 +113,26 @@ class rtlCore : public rtlObject
         void recvReqRetry() override;
         //void recvRangeChange() override;
     };
+
+    class VMemReqPort : public RequestPort
+    {
+      private:
+        rtlCore *owner;
+
+      public:
+        VMemReqPort(const std::string& name, rtlCore *owner) :
+            RequestPort(name, owner), owner(owner)
+        { }
+        bool busy;
+        bool prev_succ;
+        bool resp_busy;
+        bool send_respretry;
+
+      protected:
+        bool recvTimingResp(PacketPtr pkt) override;
+        void recvReqRetry() override;
+        //void recvRangeChange() override;
+    };
     ////////////////////////////////////////
     // Port instantiations - Core is initiator so all are request ports
     ////////////////////////////////////////
@@ -120,13 +140,18 @@ class rtlCore : public rtlObject
 
     DMemReqPort dmem_req;
 
+    VMemReqPort vmem_req;
+
     ////////////////////////////////////////
     // Internal Helper Functions
     ////////////////////////////////////////
 
     bool handleImemResp(PacketPtr pkt);
     bool handleDmemResp(PacketPtr pkt);
+    bool handleVmemResp(PacketPtr pkt);
 
+
+    PacketPtr vpkt_stalled;
     PacketPtr dpkt_stalled;
     PacketPtr ipkt_stalled;
 

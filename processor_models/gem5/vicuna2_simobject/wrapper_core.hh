@@ -67,6 +67,12 @@ class Wrapper_Core {
         void set_dport_gnt(bool val);
         void set_dmem_resp(gem5::PacketPtr pkt);
 
+         //dport handling
+        bool get_vport_valid();
+        gem5::PacketPtr get_vport_packet();
+        void set_vport_gnt(bool val);
+        void set_vmem_resp(gem5::PacketPtr pkt);
+
         //misc helpers
         void enableTracing();
         void disableTracing();

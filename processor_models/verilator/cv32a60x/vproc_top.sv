@@ -68,9 +68,25 @@ module vproc_top
     input  logic               mem_src_i,
     input  logic [MEM_W  -1:0] mem_rdata_i,
     input  logic               mem_gnt_i,
-    input  logic               mem_vec_gnt_i,
+    input  logic               mem_vec_gnt_i, //not necessary, deprecated
     output logic               mem_id_o,
     input  logic               mem_id_i,
+
+
+    output logic               vec_mem_req_o,
+    output logic [31:0]        vec_mem_addr_o,
+    output logic               vec_mem_we_o,
+    output logic               vec_mem_src_o,//Not necessary
+    output logic [MEM_W/8-1:0] vec_mem_be_o,
+    output logic [MEM_W  -1:0] vec_mem_wdata_o,
+    input  logic               vec_mem_rvalid_i,
+    input  logic               vec_mem_wvalid_i,//Not necessary
+    input  logic               vec_mem_err_i,
+    input  logic               vec_mem_src_i,
+    input  logic [MEM_W  -1:0] vec_mem_rdata_i,
+    input  logic               vec_mem_gnt_i,
+    output logic               vec_mem_id_o,
+    input  logic               vec_mem_id_i,
 
     output logic               data_read_o,
 
@@ -333,40 +349,16 @@ assign result_id_test=cvxif_resp_i.result.id;
   //    - store interface does not use channel R
   //    - err signal not processed (still assigned here)
   //  TODO: CVA6 LOAD/STORE interfaces use ID to match request with internal buffer
-`ifndef RISCV_ZVE32X
-always_comb begin
-  mem_req_o = obi_load_req.req || obi_store_req.req;
-  mem_id_o  = obi_store_req.a.aid;
-  obi_load_rsp.gnt = mem_gnt_i & !obi_store_req.req; //core can issue load and store request at the same time.  give preference to stores
-  obi_store_rsp.gnt = mem_gnt_i;
-  obi_store_rsp.rvalid = mem_wvalid_i;
-  
-  mem_addr_o = obi_store_req.a.addr;
-  if (obi_load_req.req && !obi_store_req.req) begin
-      mem_addr_o = obi_load_req.a.addr;
-      mem_id_o  = obi_load_req.a.aid;
-  end
-  //only store can write
-  mem_wdata_o = obi_store_req.a.wdata; 
-  mem_we_o = obi_store_req.a.we & obi_store_req.req;
-  mem_be_o = obi_store_req.a.be; //does loading half-words change this?
-  
-  //only load uses the r interface
-  obi_load_rsp.r.rdata = mem_rdata_i;
-  obi_load_rsp.rvalid = mem_rvalid_i;
-  obi_load_rsp.r.err = mem_err_i;
-  obi_load_rsp.r.rid = '0; //This is the request buffer interface //TODO: This ID 
+logic [4:0] outstanding_vlsu_id;
+logic no_outstanding_vlsu;
 
-  //mem_req source tracking.  Without vector unit, src unused but set for completeness
-  mem_src_o = 1'b0;
-end
+`ifndef RISCV_ZVE32X
+assign no_outstanding_vlsu = 1'b1;
 `else
-//TODO Arbitration with vector unit included.  Preference given Vector > Scalar Store > Scalar Load
 //CV32A60X does not stall scalar LSU for vector stores, can lead to non-serialized accesses.
 //Current solution is to keep track of offloaded Loads/Stores and reserve the memory port until the vector load/store is resolved.
 //TODO: Improve this with a more intelligent memory system (ie write buffer), as this current setup leads to unnecessary stalling
-logic [4:0] outstanding_vlsu_id;
-logic no_outstanding_vlsu;
+
 
 //assign no_outstanding_vlsu = 1'b1;
 
@@ -405,33 +397,46 @@ assign ld_ready = obi_load_req.req;
 logic [31:0]vec_addr_test;
 assign vec_addr_test= vcore_xif.mem_req.addr;
 
-
+//Connection for vicuna data port
 always_comb begin
-  mem_req_o = (obi_load_req.req && no_outstanding_vlsu) || (obi_store_req.req && no_outstanding_vlsu) || vcore_xif.mem_valid;
-  mem_id_o  = obi_store_req.a.aid;//always either store or load id
-  obi_load_rsp.gnt = 1'b0; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
-  obi_store_rsp.gnt = 1'b0; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
+  vec_mem_req_o = vcore_xif.mem_valid;
+  vec_mem_id_o  = 1'b0;//always either store or load id
   //obi_store_rsp.gnt = (!obi_load_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu) && mem_gnt_i; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
   //obi_load_rsp.gnt = (!vcore_xif.mem_valid && no_outstanding_vlsu) && mem_gnt_i; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
-  vcore_xif.mem_ready = mem_vec_gnt_i;
-  mem_src_o = 1'b1; //default to vector unit source
+  vcore_xif.mem_ready = vec_mem_gnt_i;
+  vec_mem_src_o = 1'b1; //Uneccesary
 
   //default to vector interface for writes
-  mem_addr_o = vcore_xif.mem_req.addr;
-  mem_wdata_o = vcore_xif.mem_req.wdata; 
-  mem_we_o = vcore_xif.mem_req.we & vcore_xif.mem_valid;
-  mem_be_o = vcore_xif.mem_req.be; 
+  vec_mem_addr_o = vcore_xif.mem_req.addr;
+  vec_mem_wdata_o = vcore_xif.mem_req.wdata; 
+  vec_mem_we_o = vcore_xif.mem_req.we & vcore_xif.mem_valid;
+  vec_mem_be_o = vcore_xif.mem_req.be; 
 
-  if (obi_store_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu) begin
-      //if vector unit not using memory interface and a valid scalar store
-      mem_addr_o = obi_store_req.a.addr;
-      mem_wdata_o = obi_store_req.a.wdata; 
-      mem_we_o = obi_store_req.a.we & obi_store_req.req;
-      mem_be_o = obi_store_req.a.be; //does loading half-words change this?
-      mem_src_o = 1'b0; //Scalar source (Store so this signal not required, but here for completeness)
-      obi_store_rsp.gnt = mem_gnt_i;
+  //arbitrate rvalid based on source of request
+
+  vcore_xif.mem_result_valid = vec_mem_rvalid_i;
+
+
+  vcore_xif.mem_result.rdata = vec_mem_rdata_i;
+  vcore_xif.mem_result.err = vec_mem_err_i;
+end
+
+`endif
+
+//Connection for CVA6 data ports
+always_comb begin
+  mem_req_o = (obi_load_req.req && no_outstanding_vlsu) || (obi_store_req.req && no_outstanding_vlsu);
+  mem_id_o  = obi_store_req.a.aid;//always either store or load id
+  obi_load_rsp.gnt = 1'b0; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
+
+  mem_addr_o = obi_store_req.a.addr;
+  mem_wdata_o = obi_store_req.a.wdata; 
+  mem_we_o = obi_store_req.a.we & obi_store_req.req;
+  mem_be_o = obi_store_req.a.be; //does loading half-words change this?
+  mem_src_o = 1'b0; //Scalar source (Store so this signal not required, but here for completeness)
+  obi_store_rsp.gnt = mem_gnt_i && obi_store_req.req && no_outstanding_vlsu;
       
-  end else if (obi_load_req.req && !obi_store_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu)begin 
+  if (obi_load_req.req && !obi_store_req.req && no_outstanding_vlsu)begin 
       //if vector unit not using memory interface and a valid scalar load
       mem_addr_o = obi_load_req.a.addr;
       mem_id_o  = obi_load_req.a.aid;
@@ -440,45 +445,18 @@ always_comb begin
       mem_we_o = '0;
       mem_be_o = '0; //does loading half-words change this?
       obi_load_rsp.gnt = mem_gnt_i;
-
   end
-  // if (obi_load_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu)begin 
-  //     //if vector unit not using memory interface and a valid scalar load
-  //     mem_addr_o = obi_load_req.a.addr;
-  //     mem_src_o = 1'b0; //Scalar source
-  //     mem_wdata_o = '0; 
-  //     mem_we_o = '0;
-  //     mem_be_o = '0; //does loading half-words change this?
-  
-  // end else if (obi_store_req.req && !obi_load_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu) begin
-  //     //if vector unit not using memory interface and a valid scalar store
-  //     mem_addr_o = obi_store_req.a.addr;
-  //     mem_wdata_o = obi_store_req.a.wdata; 
-  //     mem_we_o = obi_store_req.a.we & obi_store_req.req;
-  //     mem_be_o = obi_store_req.a.be; //does loading half-words change this?
-  //     mem_src_o = 1'b0; //Scalar source (Store so this signal not required, but here for completeness)
 
-  // end
-  //arbitrate rvalid based on source of request
-  vcore_xif.mem_result_valid = 1'b0;
   obi_load_rsp.rvalid = 1'b0;
-  if (mem_src_i) begin
-    vcore_xif.mem_result_valid = mem_rvalid_i;
-  end else begin
-    obi_load_rsp.rvalid = mem_rvalid_i;
-  end
+
+  obi_load_rsp.rvalid = mem_rvalid_i;
   obi_load_rsp.r.rdata = mem_rdata_i;
   obi_load_rsp.r.err = mem_err_i;
-  obi_load_rsp.r.rid = mem_id_i; //ID used to match requests with buffers internally.  Can broadcast?
+  obi_load_rsp.r.rid = mem_id_i; //ID used to match requests with buffers internally.
 
   obi_store_rsp.rvalid = mem_wvalid_i;
   obi_store_rsp.r.rid = mem_id_i;
-
-  vcore_xif.mem_result.rdata = mem_rdata_i;
-  vcore_xif.mem_result.err = mem_err_i;
 end
-
-`endif
 
  
 

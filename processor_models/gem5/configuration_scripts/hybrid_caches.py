@@ -29,12 +29,15 @@ system.core.tracing = False
 system.core.printdreqs = False
 system.core.printireqs = False
 
+system.dmem_bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_latency=1,width=4)
+
+system.core.dmem_req = system.dmem_bus.cpu_side_ports
+system.core.vmem_req = system.dmem_bus.cpu_side_ports
+
 system.icache.cpu_side = system.core.imem_req
-system.dcache.cpu_side = system.core.dmem_req
+system.dcache.cpu_side = system.dmem_bus.mem_side_ports
 #system.dcache.cpu_side = system.dbus.mem_side_ports
-
 system.mem = SimpleMemory(image_file=binary,latency='10ns')
-
 system.bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_latency=1,width=4)
 
 ## Port connections
@@ -45,7 +48,6 @@ system.icache.mem_side = system.bus.cpu_side_ports
 system.dcache.mem_side = system.bus.cpu_side_ports
 
 system.mem.port = system.bus.mem_side_ports
-
 # set up the root SimObject and start the simulation
 root = Root(full_system=False,system=system)
 

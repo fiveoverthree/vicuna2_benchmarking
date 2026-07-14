@@ -37,7 +37,8 @@ class rtlCore(rtlObject):
     cxx_class = 'gem5::rtlCore'
 
     imem_req  = RequestPort("Instruction Memory Request Port")
-    dmem_req  = RequestPort("Data Memory Request Port")
+    dmem_req  = RequestPort("Scalar Data Memory Request Port")
+    vmem_req  = RequestPort("Vector Data Memory Request Port")
     tracing = Param.Bool(False,"Enable Trace Waveform")
     printdreqs = Param.Bool(False,"Enable print statements for Data memory requests")
     printireqs = Param.Bool(False,"Enable print statements for Instr memory requests")

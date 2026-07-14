@@ -52,8 +52,10 @@ Wrapper_Core::Wrapper_Core(bool traceOn, std::string name) :
 
     top->mem_ierr_i = false;
     top->mem_err_i = false;
+    top->vec_mem_err_i = false;
     top->mem_ignt_i = false;
     top->mem_gnt_i = false;
+    top->vec_mem_gnt_i = false;
     killOutstanding = false;
 
 }
@@ -174,12 +176,13 @@ gem5::PacketPtr Wrapper_Core::get_dport_packet(){
         packet = gem5::Packet::createWrite(req);
         //uint32_t* dataPtr = (uint32_t*)(&top->mem_wdata_o);
         uint32_t* dataPtr = (uint32_t*)malloc(4);
-        *dataPtr = top->mem_wdata_o;
-        //warn("Copy Data");
-        //std::vector<bool> be = {(bool)(((uint8_t)top->mem_be_o >> 3)& 1), (bool)(((uint8_t)top->mem_be_o >> 2)& 1), (bool)(((uint8_t)top->mem_be_o >> 1)& 1), (bool)(((uint8_t)top->mem_be_o)& 1)};
-        //req->setByteEnable(be);
-        packet->dataStatic(dataPtr); //need free()
-        packet->setData((uint8_t*)dataPtr);
+        memcpy(dataPtr, &(top->mem_wdata_o), 4);
+        packet->dataDynamic((uint8_t*)dataPtr);
+        std::vector<bool> be = {(bool)(((uint8_t)top->mem_be_o)& 1), (bool)(((uint8_t)top->mem_be_o >> 1)& 1), (bool)(((uint8_t)top->mem_be_o >> 2)& 1), (bool)(((uint8_t)top->mem_be_o >> 3)& 1)};
+
+        req->setByteEnable(be);
+        //packet->dataStatic(dataPtr); //need free()
+        
         
        
         //warn("Done");
@@ -219,7 +222,7 @@ gem5::PacketPtr Wrapper_Core::get_dport_packet(){
 }
 
 void Wrapper_Core::set_dport_gnt(bool val){
-    top->mem_gnt_i = val & top->mem_req_o;
+    top->mem_gnt_i = val & top->mem_req_o; //scalar port is a "grant" port, and should only be high if a request is being issued
     //top->mem_vec_gnt_i = val;
 }
 void Wrapper_Core::set_dmem_resp(gem5::PacketPtr pkt){
@@ -277,7 +280,67 @@ void Wrapper_Core::set_dmem_resp(gem5::PacketPtr pkt){
             //Vector Read Response
             top->mem_src_i = true;
         }
-        
     }
-    
 }
+
+/// VMEM PORT
+bool Wrapper_Core::get_vport_valid(){
+    return (bool)top->vec_mem_req_o;
+}
+ 
+gem5::PacketPtr Wrapper_Core::get_vport_packet(){
+    uint32_t addr = (uint32_t)top->vec_mem_addr_o & 0xFFFFFFFC;
+    //uint32_t addr = (uint32_t)top->mem_addr_o;
+
+  
+    if (top->vec_mem_we_o){
+        //printf("\n\nWrite Packet\n");
+        //printf("Data %X\n", top->mem_wdata_o);
+        gem5::RequestPtr req = std::make_shared<gem5::Request>(addr, 4, gem5::Request::STRICT_ORDER, 0); //TODO FIXED TO 32 BIT INTERFACE, FIXED ORDERING?
+        req->taskId((bool)top->vec_mem_id_o); //currently not needed, will be necessary for multiple outstanding requests
+        gem5::PacketPtr packet = nullptr;
+        //warn("Creating WRITE Packet");
+        //req->setExtraData((uint32_t)top->mem_src_o); //currently not necessary, known source due to vector port separation
+        packet = gem5::Packet::createWrite(req);
+        //uint32_t* dataPtr = (uint32_t*)(&top->mem_wdata_o);
+         uint32_t* dataPtr = (uint32_t*)malloc(4);
+        memcpy(dataPtr, &(top->vec_mem_wdata_o), 4);
+        packet->dataDynamic((uint8_t*)dataPtr);
+        std::vector<bool> be = {(bool)(((uint8_t)top->vec_mem_be_o)& 1), (bool)(((uint8_t)top->vec_mem_be_o >> 1)& 1), (bool)(((uint8_t)top->vec_mem_be_o >> 2)& 1), (bool)(((uint8_t)top->vec_mem_be_o >> 3)& 1)};
+
+        return packet;
+
+    } else {
+        //warn("Creating READ Packet");
+        gem5::RequestPtr req = std::make_shared<gem5::Request>(addr, 4, gem5::Request::INST_FETCH, 0); //for some reason, trying to set reads the other way fails to read data correctly.
+        //req->setExtraData((uint32_t)top->mem_src_o);
+        //req->taskId((uint32_t)top->mem_id_o);
+        //std::vector<bool> be = {(bool)(((uint8_t)top->mem_be_o >> 3)& 1), (bool)(((uint8_t)top->mem_be_o >> 2)& 1), (bool)(((uint8_t)top->mem_be_o >> 1)& 1), (bool)(((uint8_t)top->mem_be_o)& 1)};
+        //req->setByteEnable(be);
+        gem5::PacketPtr packet = nullptr;
+        packet = gem5::Packet::createRead(req); //always a read request
+        packet->allocate();
+        //packet = gem5::Packet::createRead(req);
+        //uint8_t* dataPtr = (uint8_t*)(&top->mem_wdata_o);//ti data shouldnt matter, just defining the variable to set data static
+        //packet->dataStatic(dataPtr); 
+        return packet;
+    }
+}
+void Wrapper_Core::set_vport_gnt(bool val){
+    top->vec_mem_gnt_i = val; //Vector port is a "ready" port and should be held at "1" if ready.
+}
+void Wrapper_Core::set_vmem_resp(gem5::PacketPtr pkt){
+    uint32_t *data_ptr = pkt->getPtr<uint32_t>();
+    top->vec_mem_rdata_i = *data_ptr;
+    if (pkt->isWrite()){
+        //Vector Write Response
+        top->vec_mem_src_i = true;
+        top->vec_mem_rvalid_i = true;
+        free(pkt->getPtr<uint32_t>());
+    }else{
+        //printf("\n\nValid Data Response Packet\n");
+        top->vec_mem_rvalid_i = true;
+        top->vec_mem_src_i = true;
+    }
+}
+
