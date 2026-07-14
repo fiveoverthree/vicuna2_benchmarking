@@ -97,6 +97,19 @@ int main(int argc, char **argv) {
         mem_rdata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
         mem_meta_queue[queue_pos] = (bool *)malloc(sizeof(bool) * 3); //2 metadata values (err, request source, iswrite)
     }
+    //Second port for vector memory accesses
+    bool *vec_mem_rvalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
+    unsigned char **vec_mem_rdata_queue  = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency); //memory data port
+    bool **vec_mem_meta_queue   = (bool **)malloc(sizeof(bool *) * mem_latency); //memory metadata port
+
+    bool *vec_mem_wvalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
+
+
+    for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
+    {
+        vec_mem_rdata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
+        vec_mem_meta_queue[queue_pos] = (bool *)malloc(sizeof(bool) * 3); //2 metadata values (err, request source, iswrite)
+    }
 
     bool *mem_ivalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
     unsigned char **mem_idata_queue    = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency); //memory instruction port
@@ -169,9 +182,11 @@ int main(int argc, char **argv) {
     int i;
     for (i = 0; i < mem_latency; i++) {
         mem_rvalid_queue[i] = 0;
+        vec_mem_rvalid_queue[i] = 0;
     }
     top->mem_rvalid_i = 0;
     top->mem_irvalid_i = 0;
+    top->vec_mem_rvalid_i = 0;
     top->clk_i        = 0;
     top->rst_ni       = 0;
     for (i = 0; i < 10; i++) {
@@ -191,6 +206,7 @@ int main(int argc, char **argv) {
     update_vcd(tfp, 0, 0);
     top->mem_ignt_i = 1;
     top->mem_gnt_i = 1;
+    top->vec_mem_gnt_i = 1;
     char *endptr;
     int vreg_w = strtol(argv[7], &endptr, 10);
     
@@ -209,6 +225,7 @@ int main(int argc, char **argv) {
 
     bool imem_busy = false;
     bool dmem_busy = false;
+    bool vmem_busy = false;
 
     //////////////////////////
     //Program Execution - Infinite loop with defined exit conditions
@@ -219,7 +236,7 @@ int main(int argc, char **argv) {
         // Advance to next clock cycle
         //////////////////////////
         //advance_cycle_half(top, 0);
-        top->mem_vec_gnt_i = !dmem_busy; //Vicuna treats gnt signal as memory interface ready signal.  CVA6 treats gnt signal as a response meaning transaction accepted. TODO: Unify this
+        top->mem_vec_gnt_i = !vmem_busy; //Vicuna treats gnt signal as memory interface ready signal.  CVA6 treats gnt signal as a response meaning transaction accepted. TODO: Unify this
         top->eval();
         top->clk_i = 1;
         //Memory interface is never blocked, so always granted starting after init cycles
@@ -240,34 +257,41 @@ int main(int argc, char **argv) {
         {
             unsigned char* port = (unsigned char*)&(top->mem_rdata_i);
             port[i]  = mem_rdata_queue[mem_latency-1][i];
+
+            port = (unsigned char*)&(top->vec_mem_rdata_i);
+            port[i]  = vec_mem_rdata_queue[mem_latency-1][i];
         }
+
         if (!mem_meta_queue[mem_latency-1][2]){
             top->mem_rvalid_i = mem_rvalid_queue[mem_latency-1];
             top->mem_wvalid_i = false;
         } else {
-            if (mem_meta_queue[mem_latency-1][1])
-            {
-                top->mem_rvalid_i = mem_rvalid_queue[mem_latency-1]; //Vector signalling over rvalid signal always
-                top->mem_wvalid_i = false;
-            } else {
-                top->mem_rvalid_i = false;
-                top->mem_wvalid_i = mem_rvalid_queue[mem_latency-1];
-            }
-            
+            top->mem_rvalid_i = false;
+            top->mem_wvalid_i = mem_rvalid_queue[mem_latency-1];
         }
         top->mem_err_i   = mem_meta_queue[mem_latency-1][0];
         top->mem_src_i   = mem_meta_queue[mem_latency-1][1];
+
+
+
+        top->vec_mem_err_i   = vec_mem_meta_queue[mem_latency-1][0];
+        top->vec_mem_src_i   = vec_mem_meta_queue[mem_latency-1][1];
+        top->vec_mem_rvalid_i = vec_mem_rvalid_queue[mem_latency-1]; //Vector signalling over rvalid signal always
+
 
         //Next, advance fifo buffers by one cycle
         for (int i = mem_latency-1; i > 0; i--) {
             for (int j = 0; j < mem_w/8; j++)
             {
                 mem_rdata_queue[i][j] = mem_rdata_queue[i-1][j];
+                vec_mem_rdata_queue[i][j] = vec_mem_rdata_queue[i-1][j];
             }
             mem_rvalid_queue[i] = mem_rvalid_queue[i-1];
+            vec_mem_rvalid_queue[i] = vec_mem_rvalid_queue[i-1];
             for (int j = 0; j < 3; j++)
             {
                 mem_meta_queue[i][j]   = mem_meta_queue[i-1][j];
+                vec_mem_meta_queue[i][j]   = vec_mem_meta_queue[i-1][j];
             }
         }
 
@@ -276,11 +300,19 @@ int main(int argc, char **argv) {
         mem_meta_queue[0][1]   = false;
         mem_meta_queue[0][2]   = false;
 
+        vec_mem_rvalid_queue[0] = false;
+        vec_mem_meta_queue[0][0]   = false;
+        vec_mem_meta_queue[0][1]   = false;
+        vec_mem_meta_queue[0][2]   = false;
+
         top->mem_gnt_i = !dmem_busy & top->mem_req_o;
         top->mem_ignt_i = !imem_busy & top->mem_ireq_o;
+
         update_mem_write(top, (top->mem_addr_o & 0xFFFFFFFC), (top->mem_req_o && top->mem_we_o && top->mem_gnt_i), (top->mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_wdata_o), (unsigned char*)&(top->mem_be_o), (bool*)&(top->mem_wvalid_i), mem_rvalid_queue, mem_meta_queue, mem);
         update_mem_load(top,  (top->mem_addr_o & 0xFFFFFFFC), (top->mem_req_o && !top->mem_we_o && top->mem_gnt_i), top->mem_we_o, (top->mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_rdata_i), (bool*)&(top->mem_rvalid_i), (bool*)&(top->mem_err_i), (bool*)&(top->mem_src_i), mem_rdata_queue, mem_rvalid_queue, mem_meta_queue, mem);
 
+        update_mem_write(top, (top->vec_mem_addr_o & 0xFFFFFFFC), (top->vec_mem_req_o && top->vec_mem_we_o && top->vec_mem_gnt_i), (top->vec_mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->vec_mem_wdata_o), (unsigned char*)&(top->vec_mem_be_o), (bool*)&(top->vec_mem_wvalid_i), vec_mem_rvalid_queue, vec_mem_meta_queue, mem);
+        update_mem_load(top,  (top->vec_mem_addr_o & 0xFFFFFFFC), (top->vec_mem_req_o && !top->vec_mem_we_o && top->vec_mem_gnt_i), top->vec_mem_we_o, (top->vec_mem_src_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->vec_mem_rdata_i), (bool*)&(top->vec_mem_rvalid_i), (bool*)&(top->vec_mem_err_i), (bool*)&(top->vec_mem_src_i), vec_mem_rdata_queue, vec_mem_rvalid_queue, vec_mem_meta_queue, mem);
         //Update instruction memory interface.  Never a write here.  Metadata field repurposed to store obi.id field, used internally for the index in the fetchbuffer.
 
         for (int i = 0; i < 32/8; i++)
@@ -314,12 +346,20 @@ int main(int argc, char **argv) {
 
 
         //Currently only one outstanding DMEM request allowed
-        if (top->mem_req_o && top->mem_gnt_i || top->mem_req_o && top->mem_vec_gnt_i)
+        if (top->mem_req_o && top->mem_gnt_i)
         {
             dmem_busy = true;
         }
         if (top->mem_rvalid_i || top->mem_wvalid_i) {
             dmem_busy = false;
+        }
+         //Currently only one outstanding VMEM request allowed
+        if (top->vec_mem_req_o && top->vec_mem_gnt_i)
+        {
+            vmem_busy = true;
+        }
+        if (top->vec_mem_rvalid_i) {
+            vmem_busy = false;
         }
         //Currently only 2 outstanding IMEM requests allowed
         if (top->mem_ireq_o && top->mem_ignt_i)
@@ -395,17 +435,23 @@ int main(int argc, char **argv) {
     free(line);
     free(mem);
     free(mem_rvalid_queue);
+    free(vec_mem_rvalid_queue);
     for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
     {
         free(mem_rdata_queue[queue_pos]);
         free(mem_idata_queue[queue_pos]);
         free(mem_meta_queue[queue_pos]);
         free(mem_imeta_queue[queue_pos]);
+
+        free(vec_mem_rdata_queue[queue_pos]);
+        free(vec_mem_meta_queue[queue_pos]);
     }
     free(mem_rdata_queue);
     free(mem_idata_queue);
     free(mem_meta_queue);
     free(mem_imeta_queue);
+    free(vec_mem_rdata_queue);
+    free(vec_mem_meta_queue);
 
     return exit_code;
 }
