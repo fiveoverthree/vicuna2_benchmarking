@@ -345,6 +345,8 @@ rtlCore::tick() {
             else if(curReq->getAddr() == 0x408)
             {
                 printf("TERMINATING\n");
+                Tick when = curTick();
+                exitSimLoop("SUCCESSFUL TERMINATION", 0, when, 0, true);
             }
             else {
                 bool success = dmem_req.sendTimingReq(curReq);
