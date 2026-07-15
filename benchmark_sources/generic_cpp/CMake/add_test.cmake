@@ -124,7 +124,7 @@ macro(add_benchmark_Hybrid TEST TEST_NUM CONFIG_SCRIPT)
     # endif()
   #Add Test
         add_test(NAME ${TEST_NAME} 
-             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${TEST_BUILD_DIR}/${TEST_NAME}.elf
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${TEST_BUILD_DIR}/${TEST_NAME}.elf ${MEM_W}
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 10) #TODO: Find a reasonable timeout for these tests

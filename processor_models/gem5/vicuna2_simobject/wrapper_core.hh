@@ -46,7 +46,7 @@
 class Wrapper_Core {
 
     public:
-        Wrapper_Core(bool traceOn, std::string name);
+        Wrapper_Core(bool traceOn, int mem_w, std::string name);
         ~Wrapper_Core();
 
         //main tick function
@@ -89,5 +89,6 @@ class Wrapper_Core {
         std::string fstname;
         bool traceOn;
         bool killOutstanding;
+        int vmem_w;
 };
 #endif

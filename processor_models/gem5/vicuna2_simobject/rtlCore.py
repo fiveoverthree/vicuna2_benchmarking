@@ -42,4 +42,5 @@ class rtlCore(rtlObject):
     tracing = Param.Bool(False,"Enable Trace Waveform")
     printdreqs = Param.Bool(False,"Enable print statements for Data memory requests")
     printireqs = Param.Bool(False,"Enable print statements for Instr memory requests")
+    vmem_w = Param.UInt32(32,"Enable print statements for Instr memory requests")
     #Will need to add additional interface for vector memory port

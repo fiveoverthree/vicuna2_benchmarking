@@ -227,7 +227,8 @@ rtlCore::rtlCore(const rtlCoreParams &params) :
     vmem_req(params.name + ".vmem_req", this),
     tracing(params.tracing),
     printdreqs(params.printdreqs),
-    printireqs(params.printireqs)
+    printireqs(params.printireqs),
+    vmem_w(params.vmem_w)
 {
     imem_req.busy=false;
     dmem_req.busy=false;
@@ -278,7 +279,7 @@ void
 rtlCore::initRTLModel() {
     // Init RTL Wrapper
     warn("Init RTLCORE");
-    core = new Wrapper_Core(false, "trace.vcd");
+    core = new Wrapper_Core(false, vmem_w, "trace.vcd");
     if (tracing){
         core->enableTracing(); //todo: disable tracing
     }

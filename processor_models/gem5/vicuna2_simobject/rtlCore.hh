@@ -163,6 +163,7 @@ class rtlCore : public rtlObject
     bool tracing;
     bool printdreqs;
     bool printireqs;
+    int  vmem_w;
 
 
 public:

@@ -5,8 +5,9 @@ import sys
 # import all of the SimObjects
 from m5.objects import *
 
-# Parse cmd line args.  In form "script.py BINARY_PATH"
+# Parse cmd line args.  In form "script.py BINARY_PATH VMEM_W(bits)"
 binary = sys.argv[1]
+vmem_w = sys.argv[2]
 
 system = System(cache_line_size = 64)
 
@@ -28,8 +29,9 @@ system.core = rtlCore()
 system.core.tracing = False
 system.core.printdreqs = False
 system.core.printireqs = False
+system.core.vmem_w = vmem_w
 
-system.dmem_bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_latency=1,width=4)
+system.dmem_bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_latency=1,width=(int(vmem_w)/8))
 
 system.core.dmem_req = system.dmem_bus.cpu_side_ports
 system.core.vmem_req = system.dmem_bus.cpu_side_ports
