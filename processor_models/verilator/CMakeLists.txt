@@ -260,9 +260,6 @@ endif()
 add_library(verilated_model_lib SHARED)
 
 file(GLOB VERILATOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/*.cpp" )
-message( "####### VERILATOR FILES#######")
-message("${VERILATOR_FILES}")
-message("${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
 target_sources(verilated_model_lib PUBLIC
   ${TOOLCHAIN_TOP}/verilator/include/verilated.cpp
   ${TOOLCHAIN_TOP}/verilator/include/verilated_vcd_c.cpp
