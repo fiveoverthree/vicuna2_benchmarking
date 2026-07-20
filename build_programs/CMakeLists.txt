@@ -34,6 +34,16 @@ set(GEM5_MODEL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../processor_models/gem5)#Top lev
 set(BUILD_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/build) #Top level path to program build folder
 
 #####
+# Enable/Disable different simulators.  All enabled by default
+#####
+
+option(VERILATOR_SIM   "Enable Verilator simulation"                             ON)
+option(SPIKE_SIM       "Enable spike simulation"                                 ON)
+option(GEM5_SIM        "Enable gem5 simulation"                                  ON)
+option(HYBRID_GEM5_SIM "Enable hybrid gem5/verilator simulation"                 ON)
+option(ETISS           "Enable ETISS simulation"                                 ON)
+
+#####
 # Select RISCV_ARCH and RISCV_ABI and Autovectorization flags based on selected features
 #####
 

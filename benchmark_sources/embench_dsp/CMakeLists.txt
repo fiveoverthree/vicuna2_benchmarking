@@ -51,18 +51,24 @@ target_include_directories(dsp-lib PUBLIC
 # Add tests for the benchmark suite
 ###########
 
-#Needed to run TensorFlow code with RISC-V toolchain.  These flags need to be defined at this level and at tflm library level TODO: investigate
-
 #Set location for build binaries
 set(BINARY_DIR ${BUILD_DIR}/benchmark_sources/embench_dsp/)
 
 file(GLOB folders "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/*" )
 foreach(item ${folders})
     string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/" "" bm ${item})
-    add_Benchmark_Verilator(${bm})
-    #add_Benchmark_Gem5(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} gem5_caches)
-    #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_caches)
-    #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_only)
-    add_Benchmark_Spike(${bm})
+    if (${VERILATOR_SIM})
+    	add_Benchmark_Verilator(${bm})
+    endif()
+    if (${GEM5_SIM})
+    	#add_Benchmark_Gem5(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} gem5_caches)
+    endif()
+    if (${HYBRID_GEM5_SIM})
+    	#add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_caches)
+    	#add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_only)
+    endif()
+    if(${SPIKE_SIM})
+    	add_Benchmark_Spike(${bm})
+    endif()
 endforeach()
 
