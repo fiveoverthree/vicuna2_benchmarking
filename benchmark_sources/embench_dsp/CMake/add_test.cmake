@@ -2,7 +2,7 @@
 # Macro for adding a tinyml benchmark to CTest
 #######
 include(${TOOLCHAIN_TOP}/CMake/toolchain_build.cmake) #include toolchain macros
-macro(add_Benchmark TEST)
+macro(add_Benchmark_Verilator TEST)
 
     # Check if verilator model is built  TODO: Implement check to confirm params are the same?
     if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/verilated_model")
@@ -31,7 +31,6 @@ macro(add_Benchmark TEST)
     
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
-        ${FRAMEWORK_TOP}/spike/crt0.S
         ${EMBENCH_DSP_TOP}/benchmarks/${TEST}/benchmark.hpp   
         ${EMB_SRCS}
     )
