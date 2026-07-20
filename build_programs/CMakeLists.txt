@@ -162,6 +162,14 @@ if(${COMPILER} STREQUAL "GCC")
     #build gcc multilib
     build_gcc_multilib()
     # Select Toolchain File
+
+    option(AUTOVEC "Disable/Enable Autovectorization for GCC" ON)
+    if (${AUTOVEC})
+        set(AUTOVEC_FLAGS "-ftree-vectorize -fno-tree-slp-vectorize")
+    else()
+        set(AUTOVEC_FLAGS "-fno-tree-vectorize -fno-tree-slp-vectorize")
+    endif()
+
     set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_TOP}/GCC/gcc_toolchain.cmake")
 
 elseif(${COMPILER} STREQUAL "LLVM")
