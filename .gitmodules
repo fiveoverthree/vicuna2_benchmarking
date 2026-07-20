@@ -56,3 +56,6 @@
 [submodule "toolchain/etiss_base/etiss_rvv"]
 	path = toolchain/etiss_base/etiss_rvv
 	url = git@github.com:danielschloms/etiss.git
+[submodule "benchmark_sources/embench_iot/embench-iot"]
+	path = benchmark_sources/embench_iot/embench-iot
+	url = https://github.com/embench/embench-iot.git

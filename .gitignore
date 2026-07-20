@@ -17,3 +17,4 @@ benchmark_sources/MLPerfTiny/tflm/tflm_source_tree/
 benchmark_sources/MLPerfTiny/tflm/tflm_source_tree_cmsis/
 
 opencode.json
+.vscode/
