@@ -19,7 +19,7 @@ file(GLOB folders "${EMBENCH_IOT_TOP}/embench-iot/src/*" )
 foreach(item ${folders})
     string(REPLACE "${EMBENCH_IOT_TOP}/embench-iot/src/" "" bm ${item})
     #TODO: add support for other simulators as well
-    #add_Benchmark(${bm})
+    add_Benchmark(${bm})
     #add_Benchmark_Gem5(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} gem5_caches)
     #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_caches)
     #add_Benchmark_Hybrid(toycar_int8 ${CMAKE_CURRENT_SOURCE_DIR}/Int8/toycar/ ${BINARY_DIR} hybrid_only)

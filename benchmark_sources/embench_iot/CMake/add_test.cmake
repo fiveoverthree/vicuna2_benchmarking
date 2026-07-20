@@ -25,7 +25,6 @@ macro(add_Benchmark TEST)
     
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
-        ${FRAMEWORK_TOP}/spike/crt0.S
         ${EMBENCH_IOT_TOP}/benchmarks/benchmark.hpp   
         ${EMBENCH_SRCS}
     )
