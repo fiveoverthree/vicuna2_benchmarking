@@ -231,7 +231,7 @@ macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
-                       COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)    
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)    
 	              
 
     #Add Test

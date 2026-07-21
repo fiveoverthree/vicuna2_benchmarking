@@ -247,7 +247,7 @@ macro(add_Benchmark_Spike TEST)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
-                       COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)
 
     #Optionally enable register commit log outputs for debugging
     set(SPIKE_COMMIT_LOG_ARGS "")
