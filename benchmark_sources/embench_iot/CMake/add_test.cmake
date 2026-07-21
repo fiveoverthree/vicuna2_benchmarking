@@ -247,12 +247,17 @@ macro(add_Benchmark_Spike TEST)
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
-                       COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)    
-	              
+                       COMMAND ${CMAKE_OBJCOPY} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt)
+
+    #Optionally enable register commit log outputs for debugging
+    set(SPIKE_COMMIT_LOG_ARGS "")
+	if (${COMMIT_LOG})
+    	set(SPIKE_COMMIT_LOG_ARGS "--log-commits")
+    endif()
 
     #Add Test
      add_test(NAME ${TEST_NAME} 
-              COMMAND ${TOOLCHAIN_TOP}/spike/bin/spike --isa=rv32imf_zicntr_zihpm_zfh_zve32f_zvfh_zvl${VREG_W}b ${BINARY_DIR}/${TEST_NAME}.elf 
+              COMMAND ${TOOLCHAIN_TOP}/spike/bin/spike --isa=rv32imf_zicntr_zihpm_zfh_zve32f_zvfh_zvl${VREG_W}b ${SPIKE_COMMIT_LOG_ARGS} --log=${BINARY_DIR}/${TEST_NAME}_commit_log.txt ${BINARY_DIR}/${TEST_NAME}.elf 
               WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 5) #TODO: Find a reasonable timeout for these tests

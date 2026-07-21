@@ -18,11 +18,6 @@ message(STATUS "CMake Version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 set(BENCHMARK_SUITE "NONE" CACHE STRING "Benchmark Suite to compile.  Name of the top level folder in /Benchmark_Sources")
 set(COMPILER "NONE" CACHE STRING "GCC or LLVM")
 
-option(TRACE        "Enable trace outputs"                                         OFF)
-
-set(MEM_LATENCY 1 CACHE STRING "Memory latency") #This should come from the vector config
-option(PRINT        "Enable print statements"                                      OFF) # Currently not used
-
 
 #####
 # Default Paths to Subdirectories
@@ -44,6 +39,13 @@ option(HYBRID_GEM5_SIM "Enable hybrid gem5/verilator simulation"                
 option(ETISS           "Enable ETISS simulation"                                 ON)
 
 #####
+# Enable/Disable debugging features.  All disabled by default
+#####
+
+option(TRACE        "Enable trace outputs"                                      OFF)
+option(COMMIT_LOG   "Enable register commit logs from Verilator + Spike"        OFF)
+
+#####
 # Select RISCV_ARCH and RISCV_ABI and Autovectorization flags based on selected features
 #####
 
@@ -58,6 +60,7 @@ message("Selected VREG_W = ${VREG_W}")
 set(MEM_W ${VMEM_W})
 message("Selected MEM_W = ${MEM_W}")
 
+set(MEM_LATENCY 1 CACHE STRING "Memory latency") #This should come from the vector config
 
 #These control benchmark configurations specific to the selected RISCV_ARCH
 option(RISCV_F "Use the RISC-V F Extension" OFF)
