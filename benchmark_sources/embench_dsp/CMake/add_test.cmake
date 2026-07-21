@@ -61,23 +61,26 @@ macro(add_Benchmark_Verilator TEST)
     
     #VERY DANGEROUS TO USE TRACE
 
-    set(INST_TRACE_ARGS "${TEST_BUILD_DIR}/inst_trace.txt")
-
+    #VERY DANGEROUS TO USE TRACE
     if(TRACE)
-        message("${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_sig.vcd")
-        set(MEM_TRACE_ARGS "${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_mem.csv")
-        set(VCD_TRACE_ARGS "${BUILD_DIR}/benchmark_sources/embench_dsp/last_test_sig.vcd")
-
+        set(VCD_TRACE_FLAG "--trace")
+        set(VCD_TRACE_ARG "${BUILD_DIR}/benchmark_sources/embench_dsp/test_${TEST_NAME}_sig.vcd")
     else()
-        set(MEM_TRACE_ARGS "")
-        set(VCD_TRACE_ARGS "")
+        set(VCD_TRACE_FLAG "")
+        set(VCD_TRACE_ARG "")
     endif()
-                       
-	              
+
+     if(COMMIT_LOG)
+        set(COMMIT_FLAG "--commit")
+        set(COMMIT_ARG "${BUILD_DIR}/benchmark_sources/embench_dsp/")
+    else()
+        set(COMMIT_FLAG "")
+        set(COMMIT_ARG "")
+    endif()
 
     #Add Test
     add_test(NAME ${TEST_NAME} 
-             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${BUILD_DIR}/benchmark_sources/embench_dsp/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 toycar ${VREG_W} 0 ${VCD_TRACE_ARGS}  #TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${BUILD_DIR}/benchmark_sources/embench_dsp/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${TEST_NAME} ${VREG_W} 0 ${VCD_TRACE_FLAG} ${VCD_TRACE_ARG} ${COMMIT_FLAG} ${COMMIT_ARG}#TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT  1000) #TODO: Find a reasonable timeout for these tests

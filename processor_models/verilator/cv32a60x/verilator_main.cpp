@@ -10,6 +10,7 @@
 
 #include "verilator_support_cv32a60x.h"
 #include "verilated.h"
+#include "Vvproc_top_cva6_pipeline__Cz1.h"
 
 
 int main(int argc, char **argv) {
@@ -20,8 +21,8 @@ int main(int argc, char **argv) {
     //////////////////////////
     //Check validity and parse input arguments
     //////////////////////////
-    if (argc != 9 && argc != 10) {
-        fprintf(stderr, "ERROR: Correct Usage: %s PROG_PATHS_LIST MEM_W MEM_SZ MEM_LATENCY EXTRA_CYCLES TEST_NAME VREG_W NUM_TEST_CASES [WAVEFORM_FILE]\n", argv[0]);
+    if (argc != 9 && argc != 11 && argc != 13) {
+        fprintf(stderr, "ERROR: Correct Usage: %s PROG_PATHS_LIST MEM_W MEM_SZ MEM_LATENCY EXTRA_CYCLES TEST_NAME VREG_W NUM_TEST_CASES [--trace WAVEFORM_FILE] [--commit COMMIT_PATH]\n", argv[0]);
         return 1;
     }  
 
@@ -63,23 +64,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ERROR: opening `%s': %s\n", argv[1], strerror(errno));
         return 2;
     }
-
-
-    //////////////////////////
-    //Init regfile logs
-    //////////////////////////
-
-    /*Log File for Scalar Registers*/
-    std::string filename=(std::string(argv[6])+std::string("_xreg_commits_verilator.txt"));
-    FILE *fxreglog = fopen(filename.c_str(), "w");
-
-    /*Log File for Vector Registers.  Separate log because actual writes to VREGs might be out of order relative to the Xregs.  Should NOT be out of order relative to themselves.*/
-    filename=(std::string(argv[6])+std::string("_vreg_commits_verilator.txt"));
-    FILE *fvreglog = fopen(filename.c_str(), "w");
-
-    /*Log File for Scalar Floating Point Registers*/
-    filename=(std::string(argv[6])+std::string("_freg_commits_verilator.txt"));
-    FILE *ffreglog = fopen(filename.c_str(), "w");
 
     //////////////////////////
     //Allocate memory latency buffers
@@ -124,18 +108,50 @@ int main(int argc, char **argv) {
 
     Vvproc_top *top = new Vvproc_top;
 
-
     //////////////////////////
     //Setup vcd trace file
     //////////////////////////
     VerilatedTrace_t *tfp = NULL;
-    if (argc == 10) {
-        //#ifdef TRACE_VCD
-        tfp = new VerilatedTrace_t;
-        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
-        tfp->open(argv[9]);
-        //#endif
+    if (argc >= 11){
+        if((strcmp(argv[9], "--trace")) == 0) {
+            tfp = new VerilatedTrace_t;
+            top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+            tfp->open(argv[10]);
+        }
     }
+    if (argc >= 13){
+        if((strcmp(argv[11], "--trace")) == 0) {
+            tfp = new VerilatedTrace_t;
+            top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+            tfp->open(argv[12]);
+        }
+    }
+
+    //////////////////////////
+    //Init regfile logs
+    //////////////////////////
+    FILE *fxreglog = NULL;
+    /*Log File for Scalar Registers*/
+    if (argc >= 11){
+        if((strcmp(argv[9], "--commit") == 0)) {
+            std::string filename=(std::string(argv[10])+std::string(argv[6])+std::string("_xreg_commits_verilator.txt"));
+            fxreglog = fopen(filename.c_str(), "w");
+        }
+    } 
+    if (argc >= 13){
+        if((strcmp(argv[11], "--commit") == 0)) {
+            std::string filename=(std::string(argv[12])+std::string(argv[6])+std::string("_xreg_commits_verilator.txt"));
+            fxreglog = fopen(filename.c_str(), "w");
+        }
+    }
+
+    // /*Log File for Vector Registers.  Separate log because actual writes to VREGs might be out of order relative to the Xregs.  Should NOT be out of order relative to themselves.*/
+    // filename=(std::string(argv[6])+std::string("_vreg_commits_verilator.txt"));
+    // FILE *fvreglog = fopen(filename.c_str(), "w");
+
+    // /*Log File for Scalar Floating Point Registers*/
+    // filename=(std::string(argv[6])+std::string("_freg_commits_verilator.txt"));
+    // FILE *ffreglog = fopen(filename.c_str(), "w");
 
 
     //////////////////////////
@@ -239,10 +255,7 @@ int main(int argc, char **argv) {
         top->mem_vec_gnt_i = !vmem_busy; //Vicuna treats gnt signal as memory interface ready signal.  CVA6 treats gnt signal as a response meaning transaction accepted. TODO: Unify this
         top->eval();
         top->clk_i = 1;
-        //Memory interface is never blocked, so always granted starting after init cycles
-        
-       
-       
+
         top->eval();
         //update_stats(top);
         //update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
@@ -403,9 +416,19 @@ int main(int argc, char **argv) {
         update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
 
         //////////////////////////
-        // Check Exit Conditions
+        // Check/Write Register Commits
         //////////////////////////
 
+        if (fxreglog != NULL && top->vproc_top->i_cva6_pipeline->we_gpr_commit_id)
+        {
+            fprintf(fxreglog, "x%d 0x%08x\n", top->vproc_top->i_cva6_pipeline->waddr_commit_id, top->vproc_top->i_cva6_pipeline->wdata_commit_id);
+        }
+
+
+
+        //////////////////////////
+        // Check Exit Conditions
+        //////////////////////////
 
         //A jump to address 0x70 is a failed test caused by an interrupt being called (all other interrupts also funnel here)  Exit Program
         if (check_PC(top, 0x00000070u) ) {
@@ -422,12 +445,15 @@ int main(int argc, char **argv) {
 
     }
 
-#if defined(TRACE_VCD) || defined(TRACE_FST)
     if (tfp != NULL)
     {
         tfp->close();
     }
-#endif
+
+    if (fxreglog != NULL)
+    {
+        fclose(fxreglog);
+    }
     top->final();
     free(prog_path);
     free(ref_path);

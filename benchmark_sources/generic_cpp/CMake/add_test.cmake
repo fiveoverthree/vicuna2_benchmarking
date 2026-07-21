@@ -17,20 +17,20 @@ endmacro()
 macro(add_benchmark_Verilator TEST TEST_NUM) 
     
     set(TEST_NAME ${TEST}_${TEST_NUM})
-    add_executable(${TEST_NAME})
+    add_executable(${TEST_NAME}_Verilator)
 
-    generic_cpp_sources(${TEST_NAME} ${TEST} ${TEST_NUM})
+    generic_cpp_sources(${TEST_NAME}_Verilator ${TEST} ${TEST_NUM})
 
     #Set Linker
-    target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    target_link_options(${TEST_NAME}_Verilator PRIVATE "-nostartfiles")
 
-    target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
+    target_link_options(${TEST_NAME}_Verilator PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
 
 
     #Link BSP
-    target_link_libraries(${TEST_NAME} PUBLIC bsp_Vicuna UART_Vicuna sim_Verilator)
+    target_link_libraries(${TEST_NAME}_Verilator PUBLIC bsp_Vicuna UART_Vicuna sim_Verilator)
 
-    add_custom_command(TARGET ${TEST_NAME}
+    add_custom_command(TARGET ${TEST_NAME}_Verilator
                        POST_BUILD
                        COMMAND ${CMAKE_OBJCOPY} -O binary ${TEST_NAME}.elf ${TEST_NAME}.bin
                        COMMAND srec_cat ${TEST_NAME}.bin -binary -offset 0x0000 -byte-swap 4 -o ${TEST_NAME}.vmem -vmem
@@ -41,20 +41,29 @@ macro(add_benchmark_Verilator TEST TEST_NUM)
     
     #VERY DANGEROUS TO USE TRACE
     if(TRACE)
-        set(VCD_TRACE_ARGS "${TEST_BUILD_DIR}/test_${TEST_NAME}_sig.vcd")
-
+        set(VCD_TRACE_FLAG "--trace")
+        set(VCD_TRACE_ARG "${TEST_BUILD_DIR}/test_${TEST_NAME}_sig.vcd")
     else()
-        set(VCD_TRACE_ARGS "")
+        set(VCD_TRACE_FLAG "")
+        set(VCD_TRACE_ARG "")
+    endif()
+
+     if(COMMIT_LOG)
+        set(COMMIT_FLAG "--commit")
+        set(COMMIT_ARG "${TEST_BUILD_DIR}/")
+    else()
+        set(COMMIT_FLAG "")
+        set(COMMIT_ARG "")
     endif()
 
     #Add Test
-    add_test(NAME ${TEST_NAME} 
-             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${TEST_NAME} ${VREG_W} 0 ${VCD_TRACE_ARGS}#TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+    add_test(NAME ${TEST_NAME}_Verilator 
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${TEST_NAME} ${VREG_W} 0 ${VCD_TRACE_FLAG} ${VCD_TRACE_ARG} ${COMMIT_FLAG} ${COMMIT_ARG}#TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
-    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 120) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME}_Verilator PROPERTIES TIMEOUT 120) #TODO: Find a reasonable timeout for these tests
 
-    message(STATUS "Successfully added ${TEST_NAME}")
+    message(STATUS "Successfully added ${TEST_NAME}_Verilator")
 
 
 endmacro()
