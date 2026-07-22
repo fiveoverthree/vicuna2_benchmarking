@@ -32,17 +32,17 @@ macro(add_benchmark_Verilator TEST TEST_NUM)
 
     add_custom_command(TARGET ${TEST_NAME}_Verilator
                        POST_BUILD
-                       COMMAND ${CMAKE_OBJCOPY} -O binary ${TEST_NAME}.elf ${TEST_NAME}.bin
-                       COMMAND srec_cat ${TEST_NAME}.bin -binary -offset 0x0000 -byte-swap 4 -o ${TEST_NAME}.vmem -vmem
-                       COMMAND rm -f prog_${TEST_NAME}.txt
-                       COMMAND echo -n "${TEST_BUILD_DIR}/${TEST_NAME}.vmem" > prog_${TEST_NAME}.txt
-                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+                       COMMAND ${CMAKE_OBJCOPY} -O binary ${TEST_NAME}_Verilator.elf ${TEST_NAME}_Verilator.bin
+                       COMMAND srec_cat ${TEST_NAME}_Verilator.bin -binary -offset 0x0000 -byte-swap 4 -o ${TEST_NAME}_Verilator.vmem -vmem
+                       COMMAND rm -f prog_${TEST_NAME}_Verilator.txt
+                       COMMAND echo -n "${TEST_BUILD_DIR}/${TEST_NAME}.vmem" > prog_${TEST_NAME}_Verilator.txt
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}_Verilator.elf > ${TEST_NAME}_Verilator_dump.txt
                        )
     
     #VERY DANGEROUS TO USE TRACE
     if(TRACE)
         set(VCD_TRACE_FLAG "--trace")
-        set(VCD_TRACE_ARG "${TEST_BUILD_DIR}/test_${TEST_NAME}_sig.vcd")
+        set(VCD_TRACE_ARG "${TEST_BUILD_DIR}/test_${TEST_NAME}_Verilator_sig.vcd")
     else()
         set(VCD_TRACE_FLAG "")
         set(VCD_TRACE_ARG "")
@@ -58,7 +58,7 @@ macro(add_benchmark_Verilator TEST TEST_NUM)
 
     #Add Test
     add_test(NAME ${TEST_NAME}_Verilator 
-             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${TEST_NAME} ${VREG_W} 0 ${VCD_TRACE_FLAG} ${VCD_TRACE_ARG} ${COMMIT_FLAG} ${COMMIT_ARG}#TODO: PASS ALL THESE ARGUMENTS IN FROM USER
+             COMMAND ./${VERILATOR_MODEL_DIR}/build/verilated_model ${TEST_BUILD_DIR}/prog_${TEST_NAME}_Verilator.txt ${MEM_W} 4194304 ${MEM_LATENCY} 1 ${TEST_NAME}_Verilator ${VREG_W} 0 ${VCD_TRACE_FLAG} ${VCD_TRACE_ARG} ${COMMIT_FLAG} ${COMMIT_ARG}#TODO: PASS ALL THESE ARGUMENTS IN FROM USER
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../..)
              
     set_tests_properties(${TEST_NAME}_Verilator PROPERTIES TIMEOUT 120) #TODO: Find a reasonable timeout for these tests
