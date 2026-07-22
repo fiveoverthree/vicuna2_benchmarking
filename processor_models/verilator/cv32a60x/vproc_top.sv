@@ -144,7 +144,7 @@ module vproc_top
   ) i_cva6_pipeline (
       .clk_i(clk_i),      
       .rst_ni(rst_ni),    
-      .boot_addr_i('h00000080),//TODO:  CURRENTLY SET TO 80 to start at the reset vector -> could set to x8000080 to match with spike?
+      .boot_addr_i('h80000080),//TODO:  CURRENTLY SET TO 80 to start at the reset vector -> could set to x8000080 to match with spike?
       .hart_id_i('0), //Only one core
       .irq_i(1'b0),
       .ipi_i(1'b0),

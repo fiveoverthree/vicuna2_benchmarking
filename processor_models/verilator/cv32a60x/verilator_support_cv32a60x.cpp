@@ -89,9 +89,9 @@ void advance_cycle_half(Vvproc_top *top, bool val){
 */
 void update_mem_load(Vvproc_top *top, uint32_t address, bool req_valid, bool req_write, bool req_src, uint32_t mem_w, uint32_t mem_lat, uint32_t mem_size, unsigned char *model_data_i, bool *model_valid_i, bool *model_err_i, bool *model_src_i, unsigned char **queue_data, bool *queue_valid, bool **queue_meta, unsigned char *mem){
 
-
+    uint32_t address_mask = address & 0x7FFFFFFF;
     //Next evaluate an outstanding request and put at the end of the buffer.
-    volatile bool valid = (address < mem_size) & req_valid;
+    volatile bool valid = (address_mask < mem_size) & req_valid;
 
     //set new queue entry to zero
     for (int i = 0; i < mem_w/8; i++)
@@ -102,7 +102,7 @@ void update_mem_load(Vvproc_top *top, uint32_t address, bool req_valid, bool req
     {
         //Copy each valid byte into buffer
         for (int i = 0; i < mem_w/8; i++) {
-            queue_data[0][i] |= mem[address+i];
+            queue_data[0][i] |= mem[address_mask+i];
             //queue_data[0][i] |= 0;
         }
         queue_valid[0] = req_valid;
@@ -134,13 +134,13 @@ void update_mem_write(Vvproc_top *top, uint32_t address, bool req_valid, bool re
     for (int i = mem_lat-1; i > 0; i--) {
         queue_valid[i] = queue_valid[i-1];
     }
-
+    uint32_t address_mask = address & 0x7FFFFFFF;
     if (req_valid) {
-        if (address < mem_size)
+        if (address_mask < mem_size)
         {
             for (int i = 0; i < mem_w / 8; i++) {
                 if ((model_be_o[i/8] & (1<<(i%8)))) {
-                    mem[address+i] = model_data_o[i];
+                    mem[address_mask+i] = model_data_o[i];
                 }
             }
         } 

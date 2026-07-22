@@ -208,7 +208,7 @@ macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
 
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
-        ${FRAMEWORK_TOP}/spike/crt0.S    
+        ${FRAMEWORK_TOP}/vicuna2_bsp/crt0.S    
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
@@ -222,7 +222,7 @@ macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
 #     #Set Linker
     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
 
-    target_link_options(${TEST_NAME} PRIVATE "-T${FRAMEWORK_TOP}/spike/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
+    target_link_options(${TEST_NAME} PRIVATE "-T${FRAMEWORK_TOP}/vicuna2_bsp/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
     if (${COMPILER} STREQUAL "LLVM")
         target_compile_options(${TEST_NAME} PRIVATE "-fno-use-cxa-atexit")  #-fno-use-cxa-atexit needed for hidden symbol `__dso_handle' error for llvm
     endif()

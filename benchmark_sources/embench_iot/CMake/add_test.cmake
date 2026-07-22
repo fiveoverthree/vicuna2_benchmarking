@@ -25,6 +25,7 @@ macro(add_Benchmark_Verilator TEST)
     
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
+        ${FRAMEWORK_TOP}/vicuna2_bsp/crt0.S
         ${EMBENCH_IOT_TOP}/benchmarks/benchmark.hpp   
         ${EMBENCH_SRCS}
     )
@@ -38,7 +39,7 @@ macro(add_Benchmark_Verilator TEST)
     target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
 
     #Link BSP
-    target_link_libraries(${TEST_NAME} PRIVATE bsp_Vicuna UART_Vicuna sim_Verilator)  
+    target_link_libraries(${TEST_NAME} PRIVATE UART_Vicuna sim_Verilator)  
 
     add_custom_command(TARGET ${TEST_NAME}
                        POST_BUILD
@@ -231,7 +232,7 @@ macro(add_Benchmark_Spike TEST)
     
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
-        ${FRAMEWORK_TOP}/spike/crt0.S
+        ${FRAMEWORK_TOP}/vicuna2_bsp/crt0.S
         ${EMBENCH_IOT_TOP}/benchmarks/benchmark.hpp   
         ${EMBENCH_SRCS}
     )
@@ -241,7 +242,7 @@ macro(add_Benchmark_Spike TEST)
     #Set Linker
     target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
 
-    target_link_options(${TEST_NAME} PRIVATE "-T${FRAMEWORK_TOP}/spike/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
+    target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld") #Spike address space starts at 0x80000000, needs different linker script
     #Link tflm and spike sim libraries
     target_link_libraries(${TEST_NAME} PRIVATE sim_spike)   
 
