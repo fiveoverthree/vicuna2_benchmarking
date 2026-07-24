@@ -27,28 +27,22 @@ class Simulator
     //Verilator Simulation uses simulated CSRs
     inline void begin_measurement()
     {
-        *signal_addr = 0x0; //Write to trigger report of current cycle count
+        m5_reset_stats(0, 0);
     };
 
     //Function to end measurement
     //Verilator Simulation uses simulated CSRs
     inline void end_measurement()
     {
-        *signal_addr = 0x0; //Write to trigger report of current cycle count
+        m5_dump_stats(0, 0);
     };
 
     //Termination success or failure function for this simulator
-    void terminate(int valid)
+    void terminate(int code)
     {
-        if (valid)
+        if (code != 0)
         {
-            *terminate_addr = 0x0; //Write 0x0 to signal success
-        } else {
-            *terminate_addr = 0xF; //Write 0xF to signal success
-        }
-        if (!valid)
-        {
-            m5_fail(0, valid); //TODO: ctest reports "test passed", but output says "fail instruction encountered"
+            m5_fail(0, code);
         }
         m5_exit(0); //exit normally
     };

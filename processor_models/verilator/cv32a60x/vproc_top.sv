@@ -105,8 +105,18 @@ module vproc_top
     input  logic               mem_iid_i,
     input  logic               mem_ignt_i,
 
+  //m5 simulator control functions pass illegal instructions.  Break out a parallel XIF Issue and XIF Result to allow for gem5 object to "accept" these instructions
+    output logic               xif_issue_valid_o,
+    input  logic               xif_issue_accept_i,
+    output logic [31:0]        xif_issue_instr_o,
+    output logic [4 -1:0]      xif_issue_id_o,
+
+    input  logic               xif_result_valid_i,
+    output logic               xif_result_ready_o,
+    input  logic [4 -1:0]      xif_result_id_i,
+
     output logic flush_o,
-    output logic                            [           32-1:0] fetch_addr_o,
+    output logic [           32-1:0] fetch_addr_o,
     output logic log_reg_w_o,
     output logic [           4:0] log_reg_w_addr_o,
     output logic [31:0] log_reg_w_data_o
@@ -265,43 +275,48 @@ module vproc_top
 ////////////
 //CV32A60X splits xif into req/response interfaces
 //CV32A60X supports most recent spec.  TODO: Upgrade Vicuna
-//    - Memory Request-Response interface is deprecated.  Currently connected directly to DMEM out port with arbitration, TODO: Upgrade to OBI
 //    - New Register Interface handles scalar source registers.  Currently re-merge into old Issue Interface (spec allows this).  TODO: Upgrade with support for this interface. -> CV32A60X "X_ISSUE_REGISTER_SPLIT = 0 : Issue and register transactions are synchronous"
 //    - Vicuna cannot currently accept any hartid.  Only one core, always tie result hartid to 0
 //    - No Result Interface error codes.  Assume traps should be handled with an external interrupt handler.  Does this mean that stalling for loads/store is no longer necessary? (have interrupt hardware keep track for precise traps)
+//
+//    Issue and Result interfaces are connected in parallel with external signals for m5 library controls
 //Issue Interface (combined with register interface)
 
 assign vcore_xif.issue_valid = cvxif_req_o.issue_valid;
+assign xif_issue_valid_o = cvxif_req_o.issue_valid;
 
 assign vcore_xif.issue_req.instr = cvxif_req_o.issue_req.instr;
+assign xif_issue_instr_o = cvxif_req_o.issue_req.instr;
+
 assign vcore_xif.issue_req.id = cvxif_req_o.issue_req.id;
-assign vcore_xif.issue_req.mode = '0; //New issue interface does not provide privilige levels.  Vicuna shouldnt need it
+assign xif_issue_id_o = cvxif_req_o.issue_req.id;
+
+assign vcore_xif.issue_req.mode = '0; //New issue interface does not provide priviledge levels.  Vicuna shouldnt need it
 assign vcore_xif.issue_req.rs = cvxif_req_o.register.rs;
 always_comb begin
   vcore_xif.issue_req.rs_valid = cvxif_req_o.register.rs_valid; //these are 2 bits wide for 2 possible operands
 end
 
 //TODO: Add bit from decoder saying a register is needed -> CV32A60X doesnt actually process this bit
-assign cvxif_resp_i.issue_ready = vcore_xif.issue_ready;
+assign cvxif_resp_i.issue_ready = vcore_xif.issue_ready; //Can assume "external" m5 interface is always ready
 assign cvxif_resp_i.register_ready = vcore_xif.issue_ready;
 
-assign cvxif_resp_i.issue_resp.accept = vcore_xif.issue_resp.accept;
-assign cvxif_resp_i.issue_resp.writeback = vcore_xif.issue_resp.writeback; //treated as a single bit internally on CV32A60X side
+assign cvxif_resp_i.issue_resp.accept = vcore_xif.issue_resp.accept | xif_issue_accept_i;
+assign cvxif_resp_i.issue_resp.writeback = xif_issue_accept_i ? '0 : vcore_xif.issue_resp.writeback; //treated as a single bit internally on CV32A60X side
 //TODO: additional bits
 
-//Commit Interface -> Appears that commit happens in the same cycle as issue?  Might not be a problem, this behavior was supported with Ibex
-
-assign vcore_xif.commit_valid = cvxif_req_o.commit_valid;
+assign vcore_xif.commit_valid = cvxif_req_o.commit_valid & vcore_xif.issue_resp.accept; //only commit to vicuna if accepted by vicuna
 assign vcore_xif.commit.id = cvxif_req_o.commit.id;
 assign vcore_xif.commit.commit_kill = cvxif_req_o.commit.commit_kill;
 
 //Result Interface
 
 assign vcore_xif.result_ready = cvxif_req_o.result_ready;
+assign xif_result_ready_o = cvxif_req_o.result_ready;
 
-assign cvxif_resp_i.result_valid = vcore_xif.result_valid;
+assign cvxif_resp_i.result_valid = vcore_xif.result_valid | xif_result_valid_i;
 assign cvxif_resp_i.result.hartid = '0;
-assign cvxif_resp_i.result.id = vcore_xif.result.id;
+assign cvxif_resp_i.result.id = xif_result_valid_i ? xif_result_id_i : vcore_xif.result.id;
 assign cvxif_resp_i.result.data = vcore_xif.result.data;
 assign cvxif_resp_i.result.rd = vcore_xif.result.rd;
 assign cvxif_resp_i.result.we = vcore_xif.result.we; //we definition seems different?

@@ -67,11 +67,16 @@ class Wrapper_Core {
         void set_dport_gnt(bool val);
         void set_dmem_resp(gem5::PacketPtr pkt);
 
-         //dport handling
+        //dport handling
         bool get_vport_valid();
         gem5::PacketPtr get_vport_packet();
         void set_vport_gnt(bool val);
         void set_vmem_resp(gem5::PacketPtr pkt);
+
+        //XIF interface handlers for m5 control functions
+        uint32_t check_xif_issue();
+
+        void signal_xif_result();
 
         //misc helpers
         void enableTracing();
@@ -90,5 +95,6 @@ class Wrapper_Core {
         bool traceOn;
         bool killOutstanding;
         int vmem_w;
+        bool xif_signal_result[2] = {false, false};//need to delay result signal by 1 cycle
 };
 #endif

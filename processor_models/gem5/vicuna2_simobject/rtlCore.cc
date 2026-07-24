@@ -34,6 +34,7 @@
 #include "params/rtlCore.hh"
 #include "sim/sim_events.hh"
 #include "sim/sim_exit.hh"
+#include "sim/stat_control.hh"
 namespace gem5
 {
 ////////////////////
@@ -322,6 +323,32 @@ rtlCore::tick() {
     core->set_iport_gnt(!imem_req.busy);
     core->set_vport_gnt(!vmem_req.busy);
 
+
+    //check for m5 control instructions on the xif interface
+    core->signal_xif_result();
+    Tick when = curTick();
+    uint32_t m5_control_code;
+    m5_control_code = core->check_xif_issue();
+    switch(m5_control_code) {
+        case 0x4200007B:
+            printf("m5_exit called\n");
+            exitSimLoop("SUCCESSFUL TERMINATION", 0, when, 0, true);
+            break;
+        case 0x4400007B: 
+            printf("m5_fail called\n");
+            exitSimLoop("OUTPUT MISMATCH", -1, when, 0, true);
+            break;
+        case 0x8000007B: //m5 reset stats
+            printf("m5 reset stats called\n");
+            gem5::statistics::schedStatEvent(false, true, when, 0);
+            break;
+        case 0x8200007B:
+            printf("m5 dump stats called\n");
+            gem5::statistics::schedStatEvent(true, false, when, 0);
+            break;
+        default:;
+    }
+
     core->top->eval();
 
     core->advanceTickCount();
@@ -337,15 +364,9 @@ rtlCore::tick() {
             if (curReq->getAddr() == 0x400) //Don't send memory mapped accesses.  These cause segfaults in gem5
             {
                 if (tracing){
-                    core->enableTracing(); //todo: disable tracing
+                    core->enableTracing();
                 }
                 //printf("Cycles: %d\n", cyclesStat);
-            }
-            else if(curReq->getAddr() == 0x408)
-            {
-                printf("TERMINATING\n");
-                Tick when = curTick();
-                exitSimLoop("SUCCESSFUL TERMINATION", 0, when, 0, true);
             }
             else {
                 bool success = dmem_req.sendTimingReq(curReq);
@@ -423,7 +444,6 @@ rtlCore::tick() {
         if (cyclesStalled >= 10000){
             warn("Stalled for 10000 cycles at addr %X : %d cycles\n", prevMemAddr, cyclesStat);
             core->disableTracing();
-            Tick when = curTick();
             exitSimLoop("LOOP Encountered", -1, when, 0, true);
         }
     } else {
@@ -473,7 +493,6 @@ rtlCore::tick() {
                 {
                     warn("Interrupt ADDRESS 70 REACHED ######");
                     core->disableTracing();
-                    Tick when = curTick();
                     exitSimLoop("EXIT AT INTERRUPT VECTOR TABLE ACCESS", -1, when, 0, true);
                 }
             } else {

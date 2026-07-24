@@ -306,3 +306,47 @@ void Wrapper_Core::set_vmem_resp(gem5::PacketPtr pkt){
     }
 }
 
+uint32_t Wrapper_Core::check_xif_issue(){
+    uint32_t instr = 0;
+    top->xif_issue_accept_i = false;
+    xif_signal_result[0] = false;
+
+    if (top->xif_issue_valid_o) {
+        instr = (uint32_t)top->xif_issue_instr_o;
+        switch (instr){
+            case 0x4200007B: //m5 exit
+                xif_signal_result[0] = true;
+                top->xif_issue_accept_i = true;
+                top->xif_result_id_i = top->xif_issue_id_o;
+                break;
+            case 0x4400007B: //m5 fail
+                xif_signal_result[0] = true;
+                top->xif_issue_accept_i = true;
+                top->xif_result_id_i = top->xif_issue_id_o;
+                break;
+            case 0x8000007B: //m5 reset stats
+                xif_signal_result[0] = true;
+                top->xif_issue_accept_i = true;
+                top->xif_result_id_i = top->xif_issue_id_o;
+                break;
+            case 0x8200007B:
+                xif_signal_result[0] = true;
+                top->xif_issue_accept_i = true;
+                top->xif_result_id_i = top->xif_issue_id_o;
+                break;
+        }
+    }
+    return instr;
+}
+
+void Wrapper_Core::signal_xif_result(){
+    top->xif_result_valid_i = false;
+    if (xif_signal_result[1]) {
+        if (top->xif_result_ready_o) {
+            top->xif_result_valid_i = true;
+        }
+    }
+    xif_signal_result[1] = xif_signal_result[0]; //Advance buffer
+}
+
+

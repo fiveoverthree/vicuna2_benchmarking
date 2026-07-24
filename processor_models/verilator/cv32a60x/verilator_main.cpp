@@ -216,6 +216,11 @@ int main(int argc, char **argv) {
     for(int i = 0; i < mem_ports; i++){
         top->vec_mem_rvalid_i[i] = 0;
     }
+
+    top->xif_issue_accept_i = 0; //fix this port to 0, only needed for gem5
+    top->xif_result_valid_i = 0;
+    top->xif_result_id_i = 0;
+
     top->clk_i        = 0;
     top->rst_ni       = 0;
     for (int i = 0; i < 10; i++) {
