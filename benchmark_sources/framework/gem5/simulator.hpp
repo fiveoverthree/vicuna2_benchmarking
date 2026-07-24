@@ -21,13 +21,14 @@ class Simulator
     //Verilator Simulation uses simulated CSRs
     inline void begin_measurement()
     {
+        m5_reset_stats(0, 0);
     };
 
     //Function to end measurement
     //Verilator Simulation uses simulated CSRs
     inline void end_measurement()
     {
-
+        m5_dump_stats(0, 0);
     };
 
     //Termination success or failure function for this simulator
