@@ -82,60 +82,50 @@ macro(add_Benchmark_Verilator TEST)
 
 endmacro()
 
-# macro(add_Benchmark_Gem5 TEST SOURCE_DIR BINARY_DIR CONFIG_SCRIPT)
-#     #Check if Gem5 simulator has been built.  If not build it. TODO: Currently, if changes are made to the rtl/verilator model, the gem5 build must be manually deleted to rebuild. Should automatically detect if new model has been generated and rebuild gem5
-#     if(NOT EXISTS "${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt" OR (REBUILD_GEM5 AND NOT REBUILT)) 
-#         message("Gem5 executable not present!  Building it now.")
-#         set(REBUILT ON)
-#         # Make sure verilator C files have been built
-#         if(NOT EXISTS "${VERILATOR_MODEL_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/")
-#             message(FATAL_ERROR "Verilator Model C Files not present!  Build the verilator model and try again.")
-#         endif()
-#         #${nproc} not parsing correctly?
-#         execute_process(COMMAND scons EXTRAS=${GEM5_MODEL_DIR}/vicuna2_simobject -j32 build/ALL/gem5.opt 
-#                             WORKING_DIRECTORY ${GEM5_MODEL_DIR}/gem5/)
-#     endif()
+macro(add_Benchmark_Gem5 TEST CONFIG_SCRIPT)
+    #Check if Gem5 simulator has been built.  If not build it.
+    build_gem5()
 
-#     set(TEST_NAME ${TEST}_Gem5_${CONFIG_SCRIPT})
+    set(TEST_NAME ${TEST}_Gem5_${CONFIG_SCRIPT})
 
-#     add_executable(${TEST_NAME})
+    add_executable(${TEST_NAME})
 
-#     target_include_directories(${TEST_NAME} PRIVATE
-#         ${SOURCE_DIR}
-#         ${SOURCE_DIR}/model_data
-#         ${FRAMEWORK_TOP}/
-#     )
+    file(GLOB EMBENCH_SRCS "${EMBENCH_IOT_TOP}/embench-iot/src/${TEST}/*.c")
+    set(EMBENCH_SRCS ${EMBENCH_SRCS} "${EMBENCH_IOT_TOP}/embench-iot/support/beebsc.c")
 
-#     target_sources(${TEST_NAME} PUBLIC
-#         ${FRAMEWORK_TOP}/main.cpp  
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
-#         ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
-#     )
-#     #Use default Linker TODO: use unified/standard one
-#     #target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
-#     #target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
-#     #Link tflm (for gem5 only build no bsp/) TODO: UART_VICUNA isnt needed, but include wants it
-#     target_link_libraries(${TEST_NAME} PRIVATE tflm sim_gem5)
+    target_include_directories(${TEST_NAME} PUBLIC
+        ${EMBENCH_IOT_TOP}/embench-iot/support
+        ${EMBENCH_IOT_TOP}/embench-iot/src/${TEST}
+        ${EMBENCH_IOT_TOP}/benchmarks
+        ${FRAMEWORK_TOP}
+    )
+    
+    target_sources(${TEST_NAME} PUBLIC
+        ${FRAMEWORK_TOP}/main.cpp
+        ${EMBENCH_IOT_TOP}/benchmarks/benchmark.hpp   
+        ${EMBENCH_SRCS}
+    )
 
-#     add_custom_command(TARGET ${TEST_NAME}
-#                        POST_BUILD
-#                        COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
-#                        )
-#     #Add Test # TODO: Current exit condition for gem5 is a segfault(from invalid uart write to be unified with other sim techniques) which reports test failed.  Improve exit conditions with gem5 API calls once generic testing structure is finished.
-#     add_test(NAME ${TEST_NAME} 
-#              COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${VREG_W} ${BINARY_DIR}/${TEST_NAME}.elf
-#              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    add_definitions(-DGLOBAL_SCALE_FACTOR=${GLOBAL_SCALE_FACTOR})
+    #Use default Linker TODO: use unified/standard one
+    #target_link_options(${TEST_NAME} PRIVATE "-nostartfiles")
+    #target_link_options(${TEST_NAME} PRIVATE "-T${VICUNA_BSP_TOP}/lld_link.ld")
+
+    target_link_libraries(${TEST_NAME} PRIVATE sim_gem5)
+
+    add_custom_command(TARGET ${TEST_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+                       )
+    #Add Test # TODO: Current exit condition for gem5 is a segfault(from invalid uart write to be unified with other sim techniques) which reports test failed.  Improve exit conditions with gem5 API calls once generic testing structure is finished.
+    add_test(NAME ${TEST_NAME} 
+             COMMAND ${GEM5_MODEL_DIR}/gem5/build/ALL/gem5.opt ${GEM5_MODEL_DIR}/configuration_scripts/${CONFIG_SCRIPT}.py ${VREG_W} ${BUILD_DIR}/benchmark_sources/embench_iot/${TEST_NAME}.elf
+             WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
              
-#     set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 0) #TODO: Find a reasonable timeout for these tests
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 30) #TODO: Find a reasonable timeout for these tests
 
-#     message(STATUS "Successfully added ${TEST_NAME}")
-# endmacro()
+    message(STATUS "Successfully added ${TEST_NAME}")
+endmacro()
 
 macro(add_Benchmark_Hybrid TEST CONFIG_SCRIPT)
     #Check if Gem5 simulator has been built.  If not build it.
