@@ -17,7 +17,7 @@ system.clk_domain.voltage_domain = VoltageDomain()
 
 # Set up the system
 system.mem_mode = "timing"  # Use timing accesses
-system.mem_ranges = [AddrRange("512MiB")]  # Create an address range
+#system.mem_ranges = [AddrRange("8192MiB")]  # Create an address range
 
 system.icache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
 system.dcache = NoncoherentCache(assoc = 1, tag_latency = 1, data_latency = 1, response_latency = 1, mshrs = 4, tgts_per_mshr = 4, size = '1kB')
@@ -39,7 +39,7 @@ system.core.vmem_req = system.dmem_bus.cpu_side_ports
 system.icache.cpu_side = system.core.imem_req
 system.dcache.cpu_side = system.dmem_bus.mem_side_ports
 #system.dcache.cpu_side = system.dbus.mem_side_ports
-system.mem = SimpleMemory(image_file=binary,latency='10ns')
+system.mem = SimpleMemory(image_file=binary,latency='10ns', range="4096MiB")
 system.bus = NoncoherentXBar(frontend_latency=1,forward_latency=1,response_latency=1,width=4)
 
 ## Port connections
