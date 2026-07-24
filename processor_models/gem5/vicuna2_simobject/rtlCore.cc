@@ -320,7 +320,6 @@ rtlCore::tick() {
 
     core->set_dport_gnt(!dmem_req.busy);
     core->set_iport_gnt(!imem_req.busy);
-
     core->set_vport_gnt(!vmem_req.busy);
 
     core->top->eval();
@@ -500,7 +499,7 @@ rtlCore::tick() {
     core->top->mem_irvalid_i = false;
     core->top->mem_rvalid_i = false;
     core->top->mem_wvalid_i = false;
-    core->top->vec_mem_rvalid_i = false;
+    core->top->vec_mem_rvalid_i[0] = false;
     core->top->eval();
     cyclesStat++;
     stats.rtl_cycles++;
