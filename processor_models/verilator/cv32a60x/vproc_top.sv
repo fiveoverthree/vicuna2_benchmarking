@@ -20,6 +20,7 @@
 module vproc_top
   import ariane_pkg::*;
   import vproc_pkg::*;
+  import obi_pkg::*;
 #(
     // CVA6 config
     parameter config_pkg::cva6_cfg_t CVA6Cfg = build_config_pkg::build_config(
@@ -44,10 +45,14 @@ module vproc_top
     `CVXIF_RESP_T(CVA6Cfg, x_compressed_resp_t, x_issue_resp_t, x_result_t),
 
     //VPROC TOP PARAMS
+    parameter int unsigned     ADDR_W        = 32,  // ADDR width in bits
     parameter int unsigned     MEM_W         = 32,  // memory bus width in bits
     parameter int unsigned     VMEM_W        = 32,  // vector memory interface width in bits
     parameter vreg_type        VREG_TYPE     = VREG_GENERIC,
-    parameter mul_type         MUL_TYPE      = MUL_GENERIC
+    parameter mul_type         MUL_TYPE      = MUL_GENERIC,
+    parameter int unsigned     MEM_PORTS     = 1,
+    parameter int unsigned     PORT_QUEUE_DEPTH = 2,
+    parameter int unsigned     OBI_ID_WIDTH  = 8
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -68,25 +73,24 @@ module vproc_top
     input  logic               mem_src_i,
     input  logic [MEM_W  -1:0] mem_rdata_i,
     input  logic               mem_gnt_i,
-    input  logic               mem_vec_gnt_i, //not necessary, deprecated
     output logic               mem_id_o,
     input  logic               mem_id_i,
 
 
-    output logic               vec_mem_req_o,
-    output logic [31:0]        vec_mem_addr_o,
-    output logic               vec_mem_we_o,
+    output logic               vec_mem_req_o [MEM_PORTS-1:0],
+    output logic [31:0]        vec_mem_addr_o [MEM_PORTS-1:0],
+    output logic               vec_mem_we_o [MEM_PORTS-1:0],
     output logic               vec_mem_src_o,//Not necessary
-    output logic [MEM_W/8-1:0] vec_mem_be_o,
-    output logic [MEM_W  -1:0] vec_mem_wdata_o,
-    input  logic               vec_mem_rvalid_i,
-    input  logic               vec_mem_wvalid_i,//Not necessary
-    input  logic               vec_mem_err_i,
+    output logic [MEM_W/8-1:0] vec_mem_be_o [MEM_PORTS-1:0],
+    output logic [MEM_W  -1:0] vec_mem_wdata_o [MEM_PORTS-1:0],
+    input  logic               vec_mem_rvalid_i [MEM_PORTS-1:0],
+    input  logic               vec_mem_wvalid_i [MEM_PORTS-1:0],//Not necessary
+    input  logic               vec_mem_err_i [MEM_PORTS-1:0],
     input  logic               vec_mem_src_i,
-    input  logic [MEM_W  -1:0] vec_mem_rdata_i,
-    input  logic               vec_mem_gnt_i,
-    output logic               vec_mem_id_o,
-    input  logic               vec_mem_id_i,
+    input  logic [MEM_W  -1:0] vec_mem_rdata_i [MEM_PORTS-1:0],
+    input  logic               vec_mem_gnt_i [MEM_PORTS-1:0],
+    output logic               vec_mem_id_o [MEM_PORTS-1:0],
+    input  logic               vec_mem_id_i [MEM_PORTS-1:0],
 
     output logic               data_read_o,
 
@@ -103,7 +107,7 @@ module vproc_top
 
     output logic flush_o,
     output logic                            [           32-1:0] fetch_addr_o,
-           output logic log_reg_w_o,
+    output logic log_reg_w_o,
     output logic [           4:0] log_reg_w_addr_o,
     output logic [31:0] log_reg_w_data_o
     //////////////////////////////////////////
@@ -144,7 +148,7 @@ module vproc_top
   ) i_cva6_pipeline (
       .clk_i(clk_i),      
       .rst_ni(rst_ni),    
-      .boot_addr_i('h80000080),//TODO:  CURRENTLY SET TO 80 to start at the reset vector -> could set to x8000080 to match with spike?
+      .boot_addr_i('h80000080),
       .hart_id_i('0), //Only one core
       .irq_i(1'b0),
       .ipi_i(1'b0),
@@ -188,6 +192,11 @@ module vproc_top
       .X_MISA      ( X_MISA      )
   ) vcore_xif ();
 
+  localparam OBI_CFG = obi_default_cfg(ADDR_W, VMEM_W, OBI_ID_WIDTH, ObiMinimalOptionalConfig);
+    OBI_BUS #(
+        .OBI_CFG     ( OBI_CFG   )
+  ) vcore_obi_bus [MEM_PORTS-1:0] ();
+
   `ifdef FORCE_ALIGNED_READS
   localparam bit [VLSU_FLAGS_W-1:0] VLSU_FLAGS = (VLSU_FLAGS_W'(1) << VLSU_ALIGNED_UNITSTRIDE);
   `else
@@ -206,6 +215,9 @@ module vproc_top
         .MUL_TYPE           ( MUL_TYPE           ),
         .VLSU_FLAGS         ( VLSU_FLAGS         ),
         .BUF_FLAGS          ( BUF_FLAGS          ),
+        .OBI_CFG            ( OBI_CFG            ),
+        .PORT_QUEUE_DEPTH   ( PORT_QUEUE_DEPTH   ),
+        .MEM_PORTS          ( MEM_PORTS          ),
         .DONT_CARE_ZERO     ( 1'b0               ),
         .ASYNC_RESET        ( 1'b0               )
     ) v_core (
@@ -214,12 +226,10 @@ module vproc_top
 
         .xif_issue_if       ( vcore_xif          ),
         .xif_commit_if      ( vcore_xif          ),
-        .xif_mem_if         ( vcore_xif          ), // this interface no longer exists TODO: Upgrade to OBI
-        .xif_memres_if      ( vcore_xif          ), // this interface no longer exists TODO: Upgrade to OBI
         .xif_result_if      ( vcore_xif          ),
         //TODO:Register Interface
 
-
+        .obi_bus            ( vcore_obi_bus      ),
 
         .pending_load_o     ( vect_pending_load  ),
         .pending_store_o    ( vect_pending_store ),
@@ -316,11 +326,7 @@ assign issue_instr = cvxif_req_o.issue_req.instr;
 logic [31:0] result_id_test;
 assign result_id_test=cvxif_resp_i.result.id;
 
-
-
 `endif
-
-
 
   /////////
   // Connect OBI Signals to expected VPROC_OUT interface.  TODO: Make vicuna side an OBI interface.  
@@ -337,8 +343,6 @@ assign result_id_test=cvxif_resp_i.result.id;
   assign obi_fetch_rsp.r.rid = mem_iid_i; //ID used by CVA6 to managed index in instruction buffer.  TODO: CURRENT SETUP ONLY SUPPORTS FETCHBUFFER SIZE OF 2
   assign obi_fetch_rsp.gnt = mem_ignt_i; //instruction memory always ready
   
-
-
   //######Connect data memory obi signals######
   //two ports (load_req and store_req).  Two requests are allowed to be issued at the same time, so arbitration must happen
   //In case when vector unit included, additional arbitration required
@@ -377,49 +381,24 @@ assign no_outstanding_vlsu = 1'b1;
     .pop_i      (vcore_xif.result_valid & vcore_xif.result_ready & (vcore_xif.result.id == outstanding_vlsu_id) & !no_outstanding_vlsu) //Add empty check in case id 0 is result signalled while fifo is empty
     //.pop_i      (vcore_xif.result_valid & vcore_xif.result_ready & !no_outstanding_vlsu)
   );
-logic test_store_req;
-logic [31:0] test_store_addr;
-assign test_store_req = obi_store_req.req;
-assign test_store_addr = obi_store_req.a.addr;
 
-logic test_load_req;
-assign test_load_req = obi_load_req.req;
+  //Connections for vicuna data ports
+  for(genvar i = 0; i < MEM_PORTS; i++) begin
 
-logic vgnt_test, mem_ld_gnt, mem_st_gnt, vec_ready, st_ready, ld_ready;
-assign vgnt_test = vcore_xif.mem_ready;
-assign mem_st_gnt = obi_store_rsp.gnt;
-assign mem_ld_gnt = obi_load_rsp.gnt;
+    assign vec_mem_req_o[i] = vcore_obi_bus[i].req;
+    assign vcore_obi_bus[i].gnt = vec_mem_gnt_i[i];
 
-assign vec_ready = vcore_xif.mem_valid;
-assign st_ready = obi_store_req.req;
-assign ld_ready = obi_load_req.req;
+    assign vec_mem_addr_o[i] = vcore_obi_bus[i].addr;
+    assign vec_mem_wdata_o[i] = vcore_obi_bus[i].wdata;
+    assign vec_mem_we_o[i] = vcore_obi_bus[i].we;
+    assign vec_mem_be_o[i] = vcore_obi_bus[i].be;
+    assign vec_mem_id_o[i] = vcore_obi_bus[i].aid;
 
-logic [31:0]vec_addr_test;
-assign vec_addr_test= vcore_xif.mem_req.addr;
-
-//Connection for vicuna data port
-always_comb begin
-  vec_mem_req_o = vcore_xif.mem_valid;
-  vec_mem_id_o  = 1'b0;//always either store or load id
-  //obi_store_rsp.gnt = (!obi_load_req.req && !vcore_xif.mem_valid && no_outstanding_vlsu) && mem_gnt_i; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
-  //obi_load_rsp.gnt = (!vcore_xif.mem_valid && no_outstanding_vlsu) && mem_gnt_i; //only grant cv32a60x the memory interface when no vector loads or stores are outstanding
-  vcore_xif.mem_ready = vec_mem_gnt_i;
-  vec_mem_src_o = 1'b1; //Uneccesary
-
-  //default to vector interface for writes
-  vec_mem_addr_o = vcore_xif.mem_req.addr;
-  vec_mem_wdata_o = vcore_xif.mem_req.wdata; 
-  vec_mem_we_o = vcore_xif.mem_req.we & vcore_xif.mem_valid;
-  vec_mem_be_o = vcore_xif.mem_req.be; 
-
-  //arbitrate rvalid based on source of request
-
-  vcore_xif.mem_result_valid = vec_mem_rvalid_i;
-
-
-  vcore_xif.mem_result.rdata = vec_mem_rdata_i;
-  vcore_xif.mem_result.err = vec_mem_err_i;
-end
+    assign vcore_obi_bus[i].rvalid = vec_mem_rvalid_i[i];
+    assign vcore_obi_bus[i].rdata = vec_mem_rdata_i[i];
+    assign vcore_obi_bus[i].err = vec_mem_err_i[i];
+    assign vcore_obi_bus[i].rid = vec_mem_id_o[i];
+  end
 
 `endif
 

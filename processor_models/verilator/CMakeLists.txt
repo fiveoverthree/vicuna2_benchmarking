@@ -61,9 +61,12 @@ message("Selected SCALAR_CORE = ${SCALAR_CORE}")
 set(ENV{VPROC_PIPELINES} ${VPROC_PIPELINES})
 message("Selected VPROC_PIPELINES = ${VPROC_PIPELINES}")
 message("Selected RISCV_ARCH = ${RISCV_ARCH}")
+set(ENV{VREG_W} ${VREG_W})
 message("Selected VREG_W = ${VREG_W}")
 set(MEM_W ${VMEM_W})
 message("Selected MEM_W = ${MEM_W}")
+set(MEM_PORTS ${VMEM_PORTS})
+message("Selected MEM_PORTS = ${MEM_PORTS}")
 
 set(MEM_SZ 4194304)
 
@@ -193,15 +196,15 @@ target_sources(verilated_model PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/verilator_main.cpp)
 
 if ( ${SCALAR_CORE} STREQUAL "cv32e40x" )
-    verilate(verilated_model SOURCES  ${CV32E40X_SOURCE} ${VICUNA_FPU_SRCS} ${VICUNA_SRCS} ${FPU_SS_SOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/vproc_top.sv
-                INCLUDE_DIRS  ${CV32E40X_INCLUDE} ${VICUNA_FPU_INCS} ${VICUNA_INCS} ${FPU_SS_INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR}
+    verilate(verilated_model SOURCES  ${DESIGN_SRC_OBI} ${CV32E40X_SOURCE} ${VICUNA_FPU_SRCS} ${VICUNA_SRCS} ${FPU_SS_SOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/vproc_top.sv
+                INCLUDE_DIRS  ${INCLUDE_OBI} ${CV32E40X_INCLUDE} ${VICUNA_FPU_INCS} ${VICUNA_INCS} ${FPU_SS_INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR}
                 TOP_MODULE vproc_top 
                 PREFIX Vvproc_top
                 ${TRACE}                                    
                 VERILATOR_ARGS -cc -exe ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/verilator_main.cpp --unroll-count 1024
                                 -Wno-WIDTH -Wno-PINMISSING -Wno-UNOPTFLAT   
-                                -Wno-UNSIGNED -Wno-IMPLICIT -Wno-LITENDIAN -Wno-CASEINCOMPLETE        
-                                -Wno-SYMRSVDWORD -Wno-BLKANDNBLK -Wno-BLKSEQ -Wno-SYNCASYNCNET        
+                                -Wno-UNSIGNED -Wno-IMPLICIT -Wno-LITENDIAN -Wno-CASEINCOMPLETE
+                                -Wno-SYMRSVDWORD -Wno-BLKANDNBLK -Wno-BLKSEQ -Wno-SYNCASYNCNET
                                 -Wno-COMBDLY 
                                 -Wno-WIDTHCONCAT
                                 -Wno-ENUMVALUE 
@@ -210,7 +213,7 @@ if ( ${SCALAR_CORE} STREQUAL "cv32e40x" )
                                 #+define+COREV_ASSERT_OFF       #Fixes UVM error with CV32E40X (Needed when not using -DVPROC_SVA)
                                 ${TRACE_FLAG} 
                                 --assert -DVPROC_SVA
-                                -GMEM_W=${MEM_W} -GVMEM_W=${VMEM_W}
+                                -GMEM_W=${MEM_W} -GVMEM_W=${VMEM_W} -GMEM_PORTS=${MEM_PORTS}
                                 ${VICUNA_MODE}
                                 ${READ_MODE}
                                 ${XIF_FLAG}
@@ -222,15 +225,15 @@ if ( ${SCALAR_CORE} STREQUAL "cv32e40x" )
                                 -CFLAGS "-std=gnu++14 -O2")
 
 elseif( ${SCALAR_CORE} STREQUAL "cv32a60x" ) #TODO: Verify/Test support for floating point vector systems with this core.  Currently, only Zve32x tested.
-    verilate(verilated_model SOURCES ${CV32A60X_SOURCE} ${VICUNA_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/vproc_top.sv
-                INCLUDE_DIRS ${CV32A60X_INCLUDE} ${VICUNA_INCS} ${CMAKE_CURRENT_SOURCE_DIR}
+    verilate(verilated_model SOURCES ${DESIGN_SRC_OBI} ${CV32A60X_SOURCE} ${VICUNA_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/vproc_top.sv
+                INCLUDE_DIRS ${INCLUDE_OBI} ${CV32A60X_INCLUDE} ${VICUNA_INCS} ${CMAKE_CURRENT_SOURCE_DIR}
                 TOP_MODULE vproc_top 
                 PREFIX Vvproc_top
                 ${TRACE}                                    
                 VERILATOR_ARGS -cc -exe ${CMAKE_CURRENT_SOURCE_DIR}/${SCALAR_CORE}/verilator_main.cpp --unroll-count 1024
                                 -Wno-WIDTH -Wno-PINMISSING -Wno-UNOPTFLAT   
-                                -Wno-UNSIGNED -Wno-IMPLICIT -Wno-LITENDIAN -Wno-CASEINCOMPLETE        
-                                -Wno-SYMRSVDWORD -Wno-BLKANDNBLK -Wno-BLKSEQ -Wno-SYNCASYNCNET        
+                                -Wno-UNSIGNED -Wno-IMPLICIT -Wno-LITENDIAN -Wno-CASEINCOMPLETE
+                                -Wno-SYMRSVDWORD -Wno-BLKANDNBLK -Wno-BLKSEQ -Wno-SYNCASYNCNET
                                 -Wno-COMBDLY 
                                 -Wno-WIDTHCONCAT
                                 -Wno-ENUMVALUE 
@@ -240,7 +243,7 @@ elseif( ${SCALAR_CORE} STREQUAL "cv32a60x" ) #TODO: Verify/Test support for floa
                                 #--clk clk_i
                                 ${TRACE_FLAG} 
                                 --assert -DVPROC_SVA
-                                -GMEM_W=${MEM_W} -GVMEM_W=${VMEM_W}
+                                -GMEM_W=${MEM_W} -GVMEM_W=${VMEM_W} -GMEM_PORTS=${MEM_PORTS}
                                 ${VICUNA_MODE}
                                 ${READ_MODE}
                                 ${XIF_FLAG}

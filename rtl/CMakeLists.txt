@@ -111,7 +111,7 @@ set(CV32A60X_SOURCE ${CVA6_REPO_DIR}/vendor/pulp-platform/fpga-support/rtl/SyncD
                     ${CVA6_REPO_DIR}/core/cvfpu/src/fpu_div_sqrt_mvp/hdl/preprocess_mvp.sv
 
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/common_cells/src/cf_math_pkg.sv #packages
-                    ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_pkg.sv
+                    #${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_pkg.sv
                     ${CVA6_REPO_DIR}/core/include/config_pkg.sv
                     ${CVA6_REPO_DIR}/core/include/cv32a60x_config_pkg.sv
                     ${CVA6_REPO_DIR}/core/include/riscv_pkg.sv
@@ -155,7 +155,7 @@ set(CV32A60X_SOURCE ${CVA6_REPO_DIR}/vendor/pulp-platform/fpga-support/rtl/SyncD
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_atop_resolver.sv  #OBI
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_demux.sv
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_err_sbr.sv
-                    ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_intf.sv
+                    #${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_intf.sv
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_mux.sv
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_sram_shim.sv
                     ${CVA6_REPO_DIR}/vendor/pulp-platform/obi/src/obi_xbar.sv
@@ -164,7 +164,7 @@ set(CV32A60X_SOURCE ${CVA6_REPO_DIR}/vendor/pulp-platform/fpga-support/rtl/SyncD
                     ${CVA6_REPO_DIR}/core/cva6_pipeline.sv
                     ${CVA6_REPO_DIR}/core/cva6_rvfi_probes.sv
                     ${CVA6_REPO_DIR}/core/alu.sv
-                    
+
                     ${CVA6_REPO_DIR}/core/fpu_wrap.sv           #depends on fpu-pkg
                     ${CVA6_REPO_DIR}/core/branch_unit.sv
                     ${CVA6_REPO_DIR}/core/compressed_decoder.sv
@@ -238,4 +238,7 @@ set(VICUNA_INCS ${VICUNA_INCS} PARENT_SCOPE)
 
 set(VICUNA_FPU_SRCS ${VICUNA_FPU_SRCS} PARENT_SCOPE)
 set(VICUNA_FPU_INCS ${VICUNA_FPU_INCS} PARENT_SCOPE)
+
+set(DESIGN_SRC_OBI ${DESIGN_SRC_OBI} PARENT_SCOPE)
+set(INCLUDE_OBI ${INCLUDE_OBI} PARENT_SCOPE)
 
