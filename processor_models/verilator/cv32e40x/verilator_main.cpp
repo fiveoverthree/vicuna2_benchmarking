@@ -20,35 +20,40 @@ int main(int argc, char **argv) {
     //////////////////////////
     //Check validity and parse input arguments
     //////////////////////////
-    if (argc != 9 && argc != 10) {
-        fprintf(stderr, "ERROR: Correct Usage: %s PROG_PATHS_LIST MEM_W MEM_SZ MEM_LATENCY EXTRA_CYCLES TEST_NAME VREG_W NUM_TEST_CASES [WAVEFORM_FILE]\n", argv[0]);
+    if (argc != 10 && argc != 12 && argc != 14) {
+        fprintf(stderr, "ERROR: Correct Usage: %s PROG_PATHS_LIST MEM_PORTS MEM_W MEM_SZ MEM_LATENCY EXTRA_CYCLES TEST_NAME VREG_W NUM_TEST_CASES [--trace WAVEFORM_FILE] [--commit COMMIT_PATH]\n", argv[0]);
         return 1;
-    }  
+    }
 
-    int mem_w, mem_sz, mem_latency, extra_cycles, num_cases;
+    int mem_ports, mem_w, mem_sz, mem_latency, extra_cycles, num_cases;
     {
         char *endptr;
-        mem_w = strtol(argv[2], &endptr, 10);
+        mem_ports = strtol(argv[2], &endptr, 10);
+        if (mem_ports == 0 || *endptr != 0) {
+            fprintf(stderr, "ERROR: invalid MEM_PORTS argument\n");
+            return 1;
+        }
+        mem_w = strtol(argv[3], &endptr, 10);
         if (mem_w == 0 || *endptr != 0) {
             fprintf(stderr, "ERROR: invalid MEM_W argument\n");
             return 1;
         }
-        mem_sz = strtol(argv[3], &endptr, 10);
+        mem_sz = strtol(argv[4], &endptr, 10);
         if (mem_sz == 0 || *endptr != 0) {
             fprintf(stderr, "ERROR: invalid MEM_SZ argument\n");
             return 1;
         }
-        mem_latency = strtol(argv[4], &endptr, 10);
+        mem_latency = strtol(argv[5], &endptr, 10);
         if (*endptr != 0) {
             fprintf(stderr, "ERROR: invalid MEM_LATENCY argument\n");
             return 1;
         }
-        extra_cycles = strtol(argv[5], &endptr, 10);
+        extra_cycles = strtol(argv[6], &endptr, 10);
         if (*endptr != 0) {
             fprintf(stderr, "ERROR: invalid EXTRA_CYCLES argument\n");
             return 1;
         }
-        num_cases = strtol(argv[8], &endptr, 10);
+        num_cases = strtol(argv[9], &endptr, 10);
         if (*endptr != 0) {
             fprintf(stderr, "ERROR: invalid NUM_TEST_CASES argument\n");
             return 1;
@@ -64,35 +69,24 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-
-    //////////////////////////
-    //Init regfile logs
-    //////////////////////////
-
-    /*Log File for Scalar Registers*/
-    std::string filename=(std::string(argv[6])+std::string("_xreg_commits_verilator.txt"));
-    FILE *fxreglog = fopen(filename.c_str(), "w");
-
-    /*Log File for Vector Registers.  Separate log because actual writes to VREGs might be out of order relative to the Xregs.  Should NOT be out of order relative to themselves.*/
-    filename=(std::string(argv[6])+std::string("_vreg_commits_verilator.txt"));
-    FILE *fvreglog = fopen(filename.c_str(), "w");
-
-    /*Log File for Scalar Floating Point Registers*/
-    filename=(std::string(argv[6])+std::string("_freg_commits_verilator.txt"));
-    FILE *ffreglog = fopen(filename.c_str(), "w");
-
     //////////////////////////
     //Allocate memory latency buffers
     //////////////////////////
-
-    bool *mem_rvalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
-    unsigned char **mem_rdata_queue  = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency); //memory data port
-    bool *mem_err_queue    = (bool *)malloc(sizeof(bool) * mem_latency);
-
-    for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
-    {
-        mem_rdata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
+    bool *mem_rvalid_queue[mem_ports];
+    unsigned char **mem_rdata_queue[mem_ports];
+    bool *mem_err_queue[mem_ports];
+    
+    for(int i = 0; i < mem_ports; i++){
+    	mem_rvalid_queue[i] = (bool *)malloc(sizeof(bool) * mem_latency);
+    	mem_rdata_queue[i]  = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency);
+    	mem_err_queue[i]    = (bool *)malloc(sizeof(bool) * mem_latency);
+    	
+    	for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
+	{
+		mem_rdata_queue[i][queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
+	}
     }
+    
 
     bool *mem_ivalid_queue = (bool *)malloc(sizeof(bool) * mem_latency);
     unsigned char **mem_idata_queue    = (unsigned char **)malloc(sizeof(unsigned char *) * mem_latency); //memory instruction port
@@ -100,7 +94,7 @@ int main(int argc, char **argv) {
     //even though known instruction interface width of 32 bits, malloc like this for compatability with memory management helper functions
     for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
     {
-        mem_idata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * 32/8);
+        mem_idata_queue[queue_pos] = (unsigned char *)malloc(sizeof(unsigned char) * mem_w/8);
     }
 
     Vvproc_top *top = new Vvproc_top;
@@ -110,12 +104,38 @@ int main(int argc, char **argv) {
     //Setup vcd trace file
     //////////////////////////
     VerilatedTrace_t *tfp = NULL;
-    if (argc == 10) {
-        #ifdef TRACE_VCD
-        tfp = new VerilatedTrace_t;
-        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
-        tfp->open(argv[9]);
-        #endif
+    if (argc >= 12){
+        if((strcmp(argv[10], "--trace")) == 0) {
+            tfp = new VerilatedTrace_t;
+            top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+            tfp->open(argv[11]);
+        }
+    }
+    if (argc >= 14){
+        if((strcmp(argv[12], "--trace")) == 0) {
+            tfp = new VerilatedTrace_t;
+            top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+            tfp->open(argv[13]);
+        }
+    }
+
+    //////////////////////////
+    //Init regfile logs
+    //TODO: Log commits based on paths for cv32e40x
+    //////////////////////////
+    FILE *fxreglog = NULL;
+    /*Log File for Scalar Registers*/
+    if (argc >= 12){
+        if((strcmp(argv[10], "--commit") == 0)) {
+            std::string filename=(std::string(argv[11])+std::string(argv[7])+std::string("_xreg_commits_verilator.txt"));
+            fxreglog = fopen(filename.c_str(), "w");
+        }
+    } 
+    if (argc >= 14){
+        if((strcmp(argv[12], "--commit") == 0)) {
+            std::string filename=(std::string(argv[13])+std::string(argv[7])+std::string("_xreg_commits_verilator.txt"));
+            fxreglog = fopen(filename.c_str(), "w");
+        }
     }
 
 
@@ -161,10 +181,12 @@ int main(int argc, char **argv) {
     //////////////////////////
     
     int i;
-    for (i = 0; i < mem_latency; i++) {
-        mem_rvalid_queue[i] = 0;
+    for(int j = 0; j < mem_ports; j++){
+	    for (i = 0; i < mem_latency; i++) {
+		mem_rvalid_queue[j][i] = 0;
+	    }
+	    top->mem_rvalid_i[j] = 0;
     }
-    top->mem_rvalid_i = 0;
     top->mem_irvalid_i = 0;
     top->clk_i        = 0;
     top->rst_ni       = 0;
@@ -187,7 +209,7 @@ int main(int argc, char **argv) {
         
     
     char *endptr;
-    int vreg_w = strtol(argv[7], &endptr, 10);
+    int vreg_w = strtol(argv[8], &endptr, 10);
     
     int  cycles_begin_trace = 0;  //Traces begin at this cycle count.  TODO: expose to the command line
     int  cycles_end_trace = 0;    //Traces end at thsi cycle count.  TODO: expose to the command line
@@ -215,14 +237,15 @@ int main(int argc, char **argv) {
         //////////////////////////
         //Update Memory interfaces
         //////////////////////////
-
-        //Update write interface
-        
+	for(int i = 0; i < mem_ports; i++){
+		//Update write interface
         //Update read interface TODO - STALL IF (top->mem_req_o && !top->mem_we_o).  Original Vicuna also did not contain this condition  TODO: MEM_REQ_VALID NEEDS TO BE SIGNALLED for writes
-        update_mem_load(top->mem_addr_o, (top->mem_req_o && !top->mem_we_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_rdata_i), (bool*)&(top->mem_rvalid_i), (bool*)&(top->mem_err_i), mem_rdata_queue, mem_rvalid_queue, mem_err_queue, mem);
-        update_mem_write(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_wdata_o), (unsigned char*)&(top->mem_be_o), mem_rvalid_queue, mem_err_queue, mem);
+            update_mem_load(top->mem_addr_o[i], (top->mem_req_o[i] && !top->mem_we_o[i]), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_rdata_i[i]), (bool*)&(top->mem_rvalid_i[i]), (bool*)&(top->mem_err_i[i]), mem_rdata_queue[i], mem_rvalid_queue[i], mem_err_queue[i], mem);
+            update_mem_write(top->mem_addr_o[i], (top->mem_req_o[i] && top->mem_we_o[i]), mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_wdata_o[i]), (unsigned char*)&(top->mem_be_o[i]), mem_rvalid_queue[i], mem_err_queue[i], mem);
+        }
+        
         //Update instruction memory interface
-        update_mem_load(top->mem_iaddr_o, top->mem_ireq_o, 32, mem_latency, mem_sz, (unsigned char*)&(top->mem_irdata_i), (bool*)&(top->mem_irvalid_i), (bool*)&(top->mem_ierr_i), mem_idata_queue, mem_ivalid_queue, mem_ierr_queue, mem);
+		update_mem_load(top->mem_iaddr_o, top->mem_ireq_o, mem_w, mem_latency, mem_sz, (unsigned char*)&(top->mem_irdata_i), (bool*)&(top->mem_irvalid_i), (bool*)&(top->mem_ierr_i), mem_idata_queue, mem_ivalid_queue, mem_ierr_queue, mem);
 
 
         top->eval();
@@ -234,19 +257,26 @@ int main(int argc, char **argv) {
         // Check Memory Mapped IO
         //////////////////////////
 
-        //Use memory mapped IO at address 0x400 to signal success or failure
+        //Use memory mapped IO at address 0x408 to signal success or failure
         char w_port;
-        if (check_memmapio(top->mem_addr_o, (top->mem_req_o && top->mem_we_o), 8, (unsigned char*)&(top->mem_wdata_o), 0x00000400u, &w_port)){
+        if (check_memmapio(top->mem_addr_o[0], (top->mem_req_o[0] && top->mem_we_o[0]), 8, (unsigned char*)&(top->mem_wdata_o[0]), 0x00000408u, &w_port)){
             if (w_port == 0)
             {
-                fprintf(stderr, "SUCCESS: TEST PASS - TEST %d - Output Match\n", v_test_failure+v_test_success+2);
-                v_test_success++;
+                fprintf(stderr, "SUCCESS: TEST PASS\n");
+                exit_code = 0; //For benchmarks, only 1 test
+                break;
+
             } else {
-                fprintf(stderr, "ERROR: TEST FAILURE - Output Mismatch - TEST %d - Output Mismatch\n", v_test_failure+v_test_success+2);
-                v_test_failure++;
-                
+                fprintf(stderr, "ERROR: TEST FAILURE - FAILED OUTPUT VALIDATION\n");
+                exit_code = 1;
+                break; //For benchmarks, only 1 test
             }
-        } 
+        }
+
+        //Use memory mapped UART at address 0x400 to print outputs
+        if (check_memmapio(top->mem_addr_o[0], (top->mem_req_o[0] && top->mem_we_o[0]), 8, (unsigned char*)&(top->mem_wdata_o[0]), 0x00000400u, &w_port)){
+            putc(w_port, stderr);
+        }
 
 
         //////////////////////////
@@ -269,15 +299,6 @@ int main(int argc, char **argv) {
             exit_code = 1;
             break;
         }
-        
-        if (check_PC(top,  0x00000074u)) {
-            fprintf(stderr, "PROGRAM EXECUTION ENDED CORRECTLY\n");
-            if ( v_test_failure > 0)
-            {
-                exit_code = 1;
-            }
-            break;
-        }
 
         if (check_stall(top, 1000)){
             exit_code = 1;
@@ -297,19 +318,6 @@ int main(int argc, char **argv) {
     ////////////////////////
     // On program completion, report statistics
     ////////////////////////
-    report_stats(); 
-
-    fprintf(stderr, "Tests Passed     : %d / %d\n", v_test_success, (v_test_success+v_test_failure));
-    if ((v_test_success+v_test_failure+1) != num_cases)//+1 because test case numbers for chipsalliance start numbering at 2 for some reason
-    {
-        fprintf(stderr, "ERROR: Result from all test cases not reported!     : %d reported vs %d total\n", (v_test_success+v_test_failure), num_cases-1); 
-        fprintf(stderr, "NOTE: ChipsAlliance Test numbering starts at 2\n"); 
-        exit_code=1;
-    }
-
-    // write dump file
-    dump_mem_region(dump_start, dump_end, mem, dump_path);
-    
 
 #if defined(TRACE_VCD) || defined(TRACE_FST)
     if (tfp != NULL)
@@ -323,20 +331,34 @@ int main(int argc, char **argv) {
     free(dump_path);
     free(line);
     free(mem);
-    free(mem_rvalid_queue);
+    for(int i = 0; i < mem_ports; i++){
+	    free(mem_rvalid_queue[i]);
+	    for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
+	    {
+		free(mem_rdata_queue[i][queue_pos]);
+	    }
+	    free(mem_rdata_queue[i]);
+	    free(mem_err_queue[i]);
+    }
+    
     for(int queue_pos = 0; queue_pos < mem_latency; queue_pos++)
     {
-        free(mem_rdata_queue[queue_pos]);
-        free(mem_idata_queue[queue_pos]);
+	free(mem_idata_queue[queue_pos]);
     }
-    free(mem_rdata_queue);
     free(mem_idata_queue);
-    free(mem_err_queue);
 
     fclose(fprogs);
-    fclose(fxreglog);
-    fclose(fvreglog);
-    fclose(ffreglog);
+    if (tfp != NULL)
+    {
+        tfp->close();
+    }
+
+    if (fxreglog != NULL)
+    {
+        fclose(fxreglog);
+    }
+    // fclose(fvreglog);
+    // fclose(ffreglog);
 
     return exit_code;
 }
