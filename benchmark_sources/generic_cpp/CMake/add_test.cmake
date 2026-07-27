@@ -142,7 +142,7 @@ macro(add_benchmark_Hybrid TEST TEST_NUM CONFIG_SCRIPT)
 endmacro()
 
 macro(add_benchmark_etiss TEST TEST_NUM)
-    # TODO: check if ETISS is built
+    build_etiss()
     set(TEST_NAME ${TEST}_${TEST_NUM}_etiss)
     set(ETISS_CRT_LIB ${CMAKE_BINARY_DIR}/benchmark_sources/framework/etiss)
 
@@ -158,7 +158,6 @@ macro(add_benchmark_etiss TEST TEST_NUM)
         "--specs=${ETISS_CRT_TOP}/etiss-semihost.specs"
         "-T${ETISS_CRT_TOP}/etiss.ld"
         "-nostartfiles"
-        "-O0"
     )
 
     # put objdump in elf target
