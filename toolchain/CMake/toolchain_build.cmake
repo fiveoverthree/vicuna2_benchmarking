@@ -214,7 +214,7 @@ macro(build_etiss)
                         WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/)
         execute_process(COMMAND cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./installed ..
                         WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build)
-        execute_process(COMMAND make -j${nproc} -s install
+        execute_process(COMMAND make -j32 -s install
                         WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build)
     endif()
 endmacro()
