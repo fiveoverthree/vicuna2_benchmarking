@@ -77,30 +77,35 @@ set(AUTOVEC_FLAGS "")
 
 if(${RISCV_ARCH} STREQUAL "rv32im") 
     set(RISCV_ABI ilp32)
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH})
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  OFF)
-    
+
 elseif(${RISCV_ARCH} STREQUAL "rv32imf")
     set(RISCV_ABI ilp32f)  
     set(RISCV_F ON)
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH})
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  OFF)
-    
+
 elseif(${RISCV_ARCH} STREQUAL "rv32imf_zfh")
     set(RISCV_ABI ilp32f)  
     set(RISCV_F ON)
     set(RISCV_ZFH ON)
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH})
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  ON)
-    
+
 elseif(${RISCV_ARCH} STREQUAL "rv32im_zve32x")
     set(RISCV_ABI ilp32) 
     set(RISCV_ZVE32X ON)
     set(AUTOVEC_FLAGS "")
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH}_zvl${VREG_W}b)
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  OFF)
-    
+
 elseif(${RISCV_ARCH} STREQUAL "rv32imf_zve32f")
     set(RISCV_ABI ilp32f) 
     set(RISCV_ZVE32X ON)
     set(RISCV_ZVE32F ON)
     set(RISCV_F ON)
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH}_zvl${VREG_W}b)
     #set(AUTOVEC_FLAGS "-fvectorize -fslp-vectorize -mllvm -scalable-vectorization=preferred -mllvm --riscv-v-vector-bits-min=${MIN_VLEN}")
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  OFF)
     
@@ -111,6 +116,7 @@ elseif(${RISCV_ARCH} STREQUAL "rv32imf_zfh_zve32f_zvfh")
     set(RISCV_ZFH ON)
     set(RISCV_F ON)
     set(RISCV_ZVFH ON)
+    set(RISCV_ARCH_COMP_STRING ${RISCV_ARCH}_zvl${VREG_W}b)
     #set(AUTOVEC_FLAGS "-fvectorize -fslp-vectorize -mllvm -scalable-vectorization=preferred -mllvm --riscv-v-vector-bits-min=${MIN_VLEN}")
     option(FH_OPS      "Use FP16 for intermediate operations (no conversion to float)"  ON) ##TODO: MOVE THIS TO BENCHMARKS TINYML
 else()

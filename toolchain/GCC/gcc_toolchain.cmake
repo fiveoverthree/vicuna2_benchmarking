@@ -19,10 +19,10 @@ set(CMAKE_STRIP ${TC_PREFIX}strip)
 
 
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -march=${RISCV_ARCH}_zicsr_zvl${VREG_W}b -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${RISCV_ARCH_COMP_STRING}_zicsr -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${RISCV_ARCH_COMP_STRING}_zicsr -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=${RISCV_ARCH_COMP_STRING}_zicsr -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -march=${RISCV_ARCH_COMP_STRING}_zicsr -mabi=${RISCV_ABI} -mcmodel=${RISCV_CMODEL}")
 
 
 ####
