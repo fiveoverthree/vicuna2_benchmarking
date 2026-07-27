@@ -191,3 +191,30 @@ macro(build_gem5) #TODO: Move gem5 submodule to toolchain directory
 
 endmacro()
 
+macro(build_etiss)
+    # TODO
+    if(NOT EXISTS "${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor")
+        message("ETISS Executable not present!  Building it now.")
+        # Make sure required dependencies are installed for ETISS
+        if(DIST STREQUAL "Ubuntu")
+            message(STATUS "Downloading Ubuntu Dependencies")
+            execute_process(COMMAND sudo apt install build-essential libboost-all-dev libtinfo-dev zlib1g-dev
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        elseif(DIST STREQUAL "Fedora")
+            message(WARNING "Downloading Fedora Dependencies - WARNING THIS IS UNTESTED")
+            execute_process(COMMAND sudo yum install cmake build-essential libboost-all-dev libtinfo-dev zlib1g-dev
+                            WORKING_DIRECTORY ${TOOLCHAIN_TOP})
+        else()
+            message(WARNING "MIGHT NEED TO DOWNLOAD DEPENDENCIES FOR YOUR DISTRIBUTION FOR ETISS")
+        endif()
+
+
+        message(WARNING "ETISS build is not fully automated yet.  This might fail. Ensure that the bare_etiss_processor binary is built and present in ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor")
+        execute_process(COMMAND mkdir -p build
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/)
+        execute_process(COMMAND cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./installed ..
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build)
+        execute_process(COMMAND make -j${nproc} -s install
+                        WORKING_DIRECTORY ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build)
+    endif()
+endmacro()
