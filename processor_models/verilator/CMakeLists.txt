@@ -254,25 +254,31 @@ elseif( ${SCALAR_CORE} STREQUAL "cv32a60x" ) #TODO: Verify/Test support for floa
                                 ${RISCV_ZVFH}
                                 ${COMMIT_AND_ISSUE}
                                 -CFLAGS "-std=gnu++14 -O2")
+
+
+
+        # Compile verilator model as a shared library for linking with gem5.  This prevents a rebuild of gem5 every time the model changes.  Currently only supported for CVA6
+        add_library(verilated_model_lib SHARED)
+
+        file(GLOB VERILATOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/*.cpp" )
+        target_sources(verilated_model_lib PUBLIC
+        ${TOOLCHAIN_TOP}/verilator/include/verilated.cpp
+        ${TOOLCHAIN_TOP}/verilator/include/verilated_vcd_c.cpp
+        ${TOOLCHAIN_TOP}/verilator/include/verilated_threads.cpp
+        ${VERILATOR_FILES}
+        )
+
+        target_include_directories(verilated_model_lib PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/
+        ${TOOLCHAIN_TOP}/verilator/include/gtkwave/
+        ${TOOLCHAIN_TOP}/verilator/include/vltstd/
+        ${TOOLCHAIN_TOP}/verilator/include/
+        )
+
+
 else()
     message(FATAL_ERROR "Unsupported Scalar Core Selected")
 endif()
 
 
-# Compile verilator model as a shared library for linking with gem5.  This prevents a rebuild of gem5 every time the model changes
-add_library(verilated_model_lib SHARED)
 
-file(GLOB VERILATOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/*.cpp" )
-target_sources(verilated_model_lib PUBLIC
-  ${TOOLCHAIN_TOP}/verilator/include/verilated.cpp
-  ${TOOLCHAIN_TOP}/verilator/include/verilated_vcd_c.cpp
-  ${TOOLCHAIN_TOP}/verilator/include/verilated_threads.cpp
-  ${VERILATOR_FILES}
-  )
-
-target_include_directories(verilated_model_lib PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeFiles/verilated_model.dir/Vvproc_top.dir/
-  ${TOOLCHAIN_TOP}/verilator/include/gtkwave/
-  ${TOOLCHAIN_TOP}/verilator/include/vltstd/
-  ${TOOLCHAIN_TOP}/verilator/include/
-)
