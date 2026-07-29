@@ -271,12 +271,20 @@ int main(int argc, char **argv) {
                 exit_code = 1;
                 break; //For benchmarks, only 1 test
             }
-        }
-
+        } 
         //Use memory mapped UART at address 0x400 to print outputs
         if (check_memmapio(top->mem_addr_o[0], (top->mem_req_o[0] && top->mem_we_o[0]), 8, (unsigned char*)&(top->mem_wdata_o[0]), 0x00000400u, &w_port)){
             putc(w_port, stderr);
         }
+
+        //////////////////////////
+        // Check/Write Register Commits
+        //////////////////////////
+
+        // if (fxreglog != NULL && top->vproc_top->i_cva6_pipeline->we_gpr_commit_id)
+        // {
+        //     fprintf(fxreglog, "x%d 0x%08x\n", top->vproc_top->i_cva6_pipeline->waddr_commit_id, top->vproc_top->i_cva6_pipeline->wdata_commit_id);
+        // }
 
 
         //////////////////////////
@@ -288,7 +296,6 @@ int main(int argc, char **argv) {
         update_stats(top);
         update_vcd(tfp, cycles_begin_trace, cycles_end_trace);
 
-        
         //////////////////////////
         // Check Exit Conditions
         //////////////////////////
@@ -304,7 +311,7 @@ int main(int argc, char **argv) {
             exit_code = 1;
             break;
         }
-        
+
         //////////
         // Outputs + Statistics
         //////////
@@ -312,12 +319,9 @@ int main(int argc, char **argv) {
         // update_xreg_commit(top, fxreglog);
         // update_freg_commit(top, ffreglog);
         // update_vreg_commit(top, vreg_w, fvreglog); 
-        
+
     }
-    
-    ////////////////////////
-    // On program completion, report statistics
-    ////////////////////////
+
 
 #if defined(TRACE_VCD) || defined(TRACE_FST)
     if (tfp != NULL)

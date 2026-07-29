@@ -88,7 +88,6 @@ void advance_half_cycle(Vvproc_top *top, int clk_val){
 void update_mem_load(uint32_t address, bool req_valid, uint32_t mem_w, uint32_t mem_lat, uint32_t mem_size, unsigned char *model_data_i, bool *model_valid_i, bool *model_err_i, unsigned char **queue_data, bool *queue_valid, bool *queue_err, unsigned char *mem){
 
     uint32_t address_mask = address & 0x7FFFFFFF;
-
     // Put read data on the processor read port.
     for (int i = 0; i < mem_w/8; i++)
     {
@@ -146,9 +145,7 @@ void update_mem_load(uint32_t address, bool req_valid, uint32_t mem_w, uint32_t 
 *   *mem           - pointer to memory space
 */
 void update_mem_write(uint32_t address, bool req_valid, uint32_t mem_w, uint32_t mem_lat, uint32_t mem_size, unsigned char *model_data_o, unsigned char *model_be_o, bool *queue_valid, bool *queue_err, unsigned char *mem){
-
     uint32_t address_mask = address & 0x7FFFFFFF;
-
     if (req_valid) {
         if (address_mask < mem_size)
         {
@@ -156,7 +153,6 @@ void update_mem_write(uint32_t address, bool req_valid, uint32_t mem_w, uint32_t
                 if ((model_be_o[i/8] & (1<<(i%8)))) {
                     mem[address_mask+i] = model_data_o[i];
                 }
-                
             }
         } 
         else
