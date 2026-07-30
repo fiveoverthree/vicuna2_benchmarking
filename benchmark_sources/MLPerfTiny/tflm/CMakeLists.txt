@@ -570,12 +570,14 @@ if(MURISCV_NN)
   )
 
   add_subdirectory(muriscv-nn/Source muriscv-nn)
-  
+
   if (DEFINED MURISCV_NN_TEST AND NOT MURISCV_NN_TEST STREQUAL "OFF")
     # add muriscv-nn testcases only if etiss is used as the backend simulator
     if (${ETISS_SIM})
       include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/add_muriscv_nn_test.cmake)
+      prepare_muriscv_nn_tests()
       add_muriscv_nn_test(test_muriscv_nn_fully_connected_s8)
+      add_muriscv_nn_test(test_muriscv_nn_fully_connected_s16)
     else()
       message(WARNING "muriscv-nn testcases are not added because ETISS is not used as the backend simulator")
     endif()
