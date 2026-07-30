@@ -288,9 +288,10 @@ macro(add_benchmark_etiss TEST SOURCE_DIR)
 
     add_test(NAME ${TEST_NAME} 
         COMMAND 
-            ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor 
+            ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor
             -i${FRAMEWORK_TOP}/etiss/etiss.ini 
             --vp.elf_file=${BINARY_DIR}/${TEST_NAME}.elf
+            --arch.cpu=RV32IMACFDV_zvl${VREG_W}b
         WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endmacro()
 

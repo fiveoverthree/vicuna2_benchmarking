@@ -30,10 +30,6 @@ macro(add_muriscv_nn_test TEST)
     string(REPLACE "int main" "int muriscv_nn_main" FILE_CONTENT "${FILE_CONTENT}")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/TestCases/${TEST}/${TEST}.c "${FILE_CONTENT}")
 
-    # copy include files
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Tests/TestData DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Tests/Utils DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
     target_sources(${TEST_NAME} PUBLIC
         ${FRAMEWORK_TOP}/main.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/TestCases/${TEST}/${TEST}.c
@@ -75,5 +71,11 @@ macro(add_muriscv_nn_test TEST)
             ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor 
             -i${FRAMEWORK_TOP}/etiss/etiss.ini 
             --vp.elf_file=${BINARY_DIR}/tflm/${TEST_NAME}.elf
+            --arch.cpu=RV32IMACFDV_zvl${VREG_W}b
         WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endmacro()
+
+macro(prepare_muriscv_nn_tests)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Tests/TestData DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/muriscv-nn/Tests/Utils DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endmacro()
