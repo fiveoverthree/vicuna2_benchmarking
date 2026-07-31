@@ -26,7 +26,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../CMake/add_test.cmake)
 # Check if TFLM source tree has been generated.  If not, generate it.
 # When using MURISCV-NN, a source tree needs to be generated with CMSIS kernels
 ######
-if(MURISCVNN)
+if(MURISCV_NN)
 
   if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tflm_source_tree_cmsis")
       message("Tensorflow Source Tree not found for muRISCV-NN.  Generating now.")
@@ -143,7 +143,7 @@ if(RISCV_ZFH)
     
     endif()
 else()
-  if (NOT MURISCVNN)
+  if (NOT MURISCV_NN)
     message("Using TFLM Default Reference Operations and Kernels")
       set(FH_INCLUDE "")
       #No FH support, use original sources
@@ -179,7 +179,7 @@ else()
 endif()
 
 
-if(MURISCVNN)
+if(MURISCV_NN)
   set(TFLM_SRCS
     ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc
     ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/fully_connected_common.cc
@@ -543,7 +543,7 @@ set(TFLM_THIRD_PARTY_SRCS
 ######
 # include muRISC-V NN
 ######
-if(MURISCVNN)
+if(MURISCV_NN)
   target_sources(tflm PRIVATE
   ${TFLM_SRCS}
   ${TFLM_THIRD_PARTY_SRCS}
@@ -570,6 +570,17 @@ if(MURISCVNN)
   )
 
   add_subdirectory(muriscv-nn/Source muriscv-nn)
+  
+  if (DEFINED MURISCV_NN_TEST AND NOT MURISCV_NN_TEST STREQUAL "OFF")
+    # add muriscv-nn testcases only if etiss is used as the backend simulator
+    if (${ETISS_SIM})
+      include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/add_muriscv_nn_test.cmake)
+      add_muriscv_nn_test(test_muriscv_nn_fully_connected_s8)
+    else()
+      message(WARNING "muriscv-nn testcases are not added because ETISS is not used as the backend simulator")
+    endif()
+
+  endif()
 
 else()
 
