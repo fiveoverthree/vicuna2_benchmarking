@@ -243,7 +243,56 @@ macro(add_Benchmark_Spike TEST SOURCE_DIR TEST_BUILD_DIR)
 
     message(STATUS "Successfully added ${TEST_NAME}")
 
- endmacro()
+endmacro()
+ 
+macro(add_benchmark_etiss TEST SOURCE_DIR)
+    build_etiss()
+    set(TEST_NAME ${TEST}_etiss)
+    set(ETISS_CRT_LIB ${CMAKE_BINARY_DIR}/benchmark_sources/framework/etiss)
+
+    add_executable(${TEST_NAME})
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${SOURCE_DIR}
+        ${SOURCE_DIR}/model_data
+        ${FRAMEWORK_TOP}/
+    )
+    target_sources(${TEST_NAME} PUBLIC
+        ${FRAMEWORK_TOP}/main.cpp
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_input_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_data.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_model_settings.h
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.cc
+        ${SOURCE_DIR}/${TEST}_data/${TEST}_output_data_ref.h
+    )
+
+
+    add_dependencies(${TEST_NAME} etiss_crt0)
+    target_link_libraries(${TEST_NAME} PRIVATE tflm etiss_crt0 sim_etiss)
+    
+    
+    target_link_options(${TEST_NAME} PRIVATE 
+        "-L${ETISS_CRT_LIB}"
+        "--specs=${ETISS_CRT_TOP}/etiss-semihost.specs"
+        "-T${ETISS_CRT_TOP}/etiss.ld"
+        "-nostartfiles"
+    )
+
+    # put objdump in elf target
+    add_custom_command(TARGET ${TEST_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_OBJDUMP} -D ${TEST_NAME}.elf > ${TEST_NAME}_dump.txt
+    )
+
+    add_test(NAME ${TEST_NAME} 
+        COMMAND 
+            ${TOOLCHAIN_TOP}/etiss_base/etiss_rvv/build/installed/bin/bare_etiss_processor 
+            -i${FRAMEWORK_TOP}/etiss/etiss.ini 
+            --vp.elf_file=${BINARY_DIR}/${TEST_NAME}.elf
+        WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endmacro()
 
 
 

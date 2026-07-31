@@ -17,4 +17,5 @@
 #
 
 add_Benchmark(aww_int8 ${CMAKE_CURRENT_SOURCE_DIR} ${BUILD_DIR}/benchmark_sources/Int8/aww)
+add_Benchmark_Spike(aww_int8 ${CMAKE_CURRENT_SOURCE_DIR} ${BUILD_DIR}/benchmark_sources/Int8/aww)
 

@@ -36,7 +36,7 @@ option(VERILATOR_SIM   "Enable Verilator simulation"                            
 option(SPIKE_SIM       "Enable spike simulation"                                 ON)
 option(GEM5_SIM        "Enable gem5 simulation"                                  ON)
 option(HYBRID_GEM5_SIM "Enable hybrid gem5/verilator simulation"                 ON)
-option(ETISS           "Enable ETISS simulation"                                 ON)
+option(ETISS_SIM       "Enable ETISS simulation"                                 ON)
 
 #####
 # Enable/Disable debugging features.  All disabled by default

@@ -161,19 +161,19 @@ else()
       ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/conv_common.cc
       
       ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/depthwiseconv_float.h
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv.cc
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv_common.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/depthwise_conv_common.cc
       
       ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/pooling.h
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling.cc
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling_common.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/pooling_common.cc
       
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape.cc
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape_common.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/reshape_common.cc
       
       ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/kernels/internal/reference/softmax.h
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax.cc
-      #${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax_common.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax.cc
+      ${TFLM_SOURCE_TREE_TOP}/tensorflow/lite/micro/kernels/softmax_common.cc
     )
   endif()
 endif()
