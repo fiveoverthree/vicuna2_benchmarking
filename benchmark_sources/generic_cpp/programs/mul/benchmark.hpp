@@ -55,7 +55,7 @@ class Benchmark
         meta = *(test_metadata*)meta_array[0];
         vecLen = meta.vec_len;
 
-        output = (int32_t*)vicuna_malloc(2 * vecLen);
+        output = (int32_t*)vicuna_malloc(vecLen * sizeof(int32_t));
 
         vec_a = (int16_t*)vec_a_array[0];
         vec_b = (int16_t*)vec_b_array[0];

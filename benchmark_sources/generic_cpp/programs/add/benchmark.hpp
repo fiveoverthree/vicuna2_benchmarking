@@ -54,7 +54,7 @@ class Benchmark
         vec_b = (int8_t*)vec_b_array[0];
         meta = *(test_metadata*)meta_array[0]; 
         vecLen = meta.vec_len;
-        output = (int16_t*)vicuna_malloc(2 * vecLen);
+        output = (int16_t*)vicuna_malloc(vecLen * sizeof(int16_t));
     };
 
     //Call code to be benchmarked

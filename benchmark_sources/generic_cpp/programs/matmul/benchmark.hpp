@@ -67,7 +67,7 @@ class Benchmark
         numColsA = meta.numColsA;
         numColsB = meta.numColsB;
 
-        output = (int32_t*)vicuna_malloc(4 * numRowsA * numColsB);
+        output = (int32_t*)vicuna_malloc(numRowsA * numColsB * sizeof(int32_t));
 
         mat_a = (int8_t*)mat_a_array[0];
         mat_b = (int8_t*)mat_b_array[0];

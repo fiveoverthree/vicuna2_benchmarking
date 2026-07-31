@@ -69,7 +69,7 @@ class Benchmark
         filter_len = meta.filter_len;
         filter_channels = meta.filter_channels;
 
-        output = (int32_t*)vicuna_malloc((input_len - (filter_len - 1))*4*filter_channels);
+        output = (int32_t*)vicuna_malloc((input_len - (filter_len - 1)) * filter_channels * sizeof(int32_t));
 
         input = (int16_t*)input_array[0];
         filter = (int16_t*)filter_array[0];
