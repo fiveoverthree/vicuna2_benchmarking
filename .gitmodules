@@ -62,3 +62,6 @@
 [submodule "toolchain/etiss_base/etiss_perfsim"]
 	path = toolchain/etiss_base/etiss_perfsim
 	url = git@github.com:danielschloms/perfsim_workspace.git
+[submodule "scripts/etiss_perfsim_testing"]
+	path = scripts/etiss_perfsim_testing
+	url = git@github.com:danielschloms/rvv_testing.git
