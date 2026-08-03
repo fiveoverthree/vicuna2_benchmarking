@@ -273,12 +273,25 @@ macro(add_benchmark_etiss TEST SOURCE_DIR)
     target_link_libraries(${TEST_NAME} PRIVATE tflm etiss_crt0 sim_etiss)
     
     
-    target_link_options(${TEST_NAME} PRIVATE 
-        "-L${ETISS_CRT_LIB}"
-        "--specs=${ETISS_CRT_TOP}/etiss-semihost.specs"
-        "-T${ETISS_CRT_TOP}/etiss.ld"
-        "-nostartfiles"
-    )
+    if(CMAKE_CXX_COMPILER_ID MATCHES "(C|c?)lang")
+        target_link_options(${TEST_NAME} PRIVATE 
+            "-nostdlib"
+            "-lc"
+            "-lsemihost"
+            "-lgcc"
+            "-lstdc++"
+            "-L${ETISS_CRT_LIB}"
+            "-T${ETISS_CRT_TOP}/etiss.ld"
+        )
+    else()
+        target_link_options(${TEST_NAME} PRIVATE 
+            "-L${ETISS_CRT_LIB}"
+            "--specs=${ETISS_CRT_TOP}/etiss-semihost.specs"
+            "-T${ETISS_CRT_TOP}/etiss.ld"
+            "-nostartfiles"
+        )
+    endif()
+    
 
     # put objdump in elf target
     add_custom_command(TARGET ${TEST_NAME}
